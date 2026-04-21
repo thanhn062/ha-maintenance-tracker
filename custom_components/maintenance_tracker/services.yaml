@@ -1,0 +1,88 @@
+create_tracker:
+  fields:
+    slug:
+      required: true
+      example: bedsheets
+      selector:
+        text:
+    title:
+      required: true
+      example: Bedsheets
+      selector:
+        text:
+    lifespan_days:
+      required: true
+      example: 14
+      selector:
+        number:
+          min: 1
+          max: 3650
+          mode: box
+    last_done:
+      required: true
+      example: "2026-04-20"
+      selector:
+        date:
+    icon:
+      example: mdi:bed
+      selector:
+        icon:
+    notes:
+      selector:
+        text:
+          multiline: true
+    category:
+      selector:
+        text:
+
+update_tracker:
+  fields:
+    tracker_id:
+      required: true
+      example: bedsheets
+      selector:
+        text:
+    title:
+      selector:
+        text:
+    lifespan_days:
+      selector:
+        number:
+          min: 1
+          max: 3650
+          mode: box
+    last_done:
+      selector:
+        date:
+    icon:
+      selector:
+        icon:
+    notes:
+      selector:
+        text:
+          multiline: true
+    category:
+      selector:
+        text:
+
+delete_tracker:
+  fields:
+    tracker_id:
+      required: true
+      example: bedsheets
+      selector:
+        text:
+
+reset:
+  fields:
+    tracker_id:
+      required: true
+      example: bedsheets
+      selector:
+        text:
+    date:
+      selector:
+        date:
+
+reload:
+

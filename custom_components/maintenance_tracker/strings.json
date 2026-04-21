@@ -1,0 +1,43 @@
+{
+  "title": "Maintenance Tracker",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Maintenance Tracker",
+        "description": "Configure the contained maintenance tracker system.",
+        "data": {
+          "due_soon_threshold": "Due soon threshold (days)"
+        }
+      }
+    },
+    "error": {
+      "single_instance_allowed": "Only one Maintenance Tracker instance is supported."
+    },
+    "abort": {
+      "single_instance_allowed": "Only one Maintenance Tracker instance is supported."
+    }
+  },
+  "services": {
+    "create_tracker": {
+      "name": "Create tracker",
+      "description": "Create a new maintenance tracker."
+    },
+    "update_tracker": {
+      "name": "Update tracker",
+      "description": "Update an existing maintenance tracker."
+    },
+    "delete_tracker": {
+      "name": "Delete tracker",
+      "description": "Delete an existing maintenance tracker."
+    },
+    "reset": {
+      "name": "Reset tracker",
+      "description": "Reset a tracker last-done date to today or a supplied date."
+    },
+    "reload": {
+      "name": "Reload registry",
+      "description": "Reload the tracker registry from storage."
+    }
+  }
+}
+
