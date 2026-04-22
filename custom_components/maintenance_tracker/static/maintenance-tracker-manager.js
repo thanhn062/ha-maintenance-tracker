@@ -12,6 +12,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       compact_show_names: true,
       compact_show_percentage: true,
       compact_show_urgency: false,
+      compact_show_tile_background: true,
     };
   }
 
@@ -138,6 +139,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       compact_show_names: true,
       compact_show_percentage: true,
       compact_show_urgency: false,
+      compact_show_tile_background: true,
       ...config,
     };
     this._render();
@@ -253,11 +255,29 @@ class MaintenanceTrackerManager extends HTMLElement {
     const visible = selectedSet.size
       ? this._trackers.filter((tracker) => selectedSet.has((tracker.slug || tracker.id || "").toLowerCase()))
       : [...this._trackers];
-    if (this._config.mode === "compact") {
+    if (this._config.mode === "compact" || this._config.mode === "badge") {
       const compactCount = Math.max(1, Math.min(Number(this._config.compact_count || 4), 8));
       return visible.slice(0, compactCount);
     }
     return visible;
+  }
+
+  _summaryText(tracker, options = {}) {
+    const natural = options.natural === true;
+    const overdueDays = Number(tracker.days_overdue || 0);
+    const daysRemaining = Math.max(Number(tracker.days_remaining || 0), 0);
+
+    if (overdueDays > 0) {
+      if (natural && overdueDays === 1) return "yesterday";
+      return `${overdueDays} day${overdueDays === 1 ? "" : "s"} overdue`;
+    }
+    if (tracker.status === "due") {
+      return "today";
+    }
+    if (natural && daysRemaining === 1) {
+      return "tomorrow";
+    }
+    return `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} left`;
   }
 
   _openDialog(mode, tracker = null) {
@@ -393,11 +413,10 @@ class MaintenanceTrackerManager extends HTMLElement {
     const overdueDays = Number(tracker.days_overdue || 0);
     const ageDays = Number(tracker.days_since_done || 0);
     const lifespanDays = Number(tracker.lifespan_days || 0);
-    const summaryLine = overdueDays > 0
-      ? `${overdueDays} day${overdueDays === 1 ? "" : "s"} overdue`
-      : tracker.status === "due"
+    const summaryLine =
+      tracker.status === "due"
         ? "Due today"
-        : `${Math.max(Number(tracker.days_remaining || 0), 0)} day${Number(tracker.days_remaining || 0) === 1 ? "" : "s"} left`;
+        : this._summaryText(tracker);
     const nextLine =
       tracker.status === "overdue"
         ? `Missed by ${tracker.days_overdue} day${tracker.days_overdue === 1 ? "" : "s"}`
@@ -451,8 +470,9 @@ class MaintenanceTrackerManager extends HTMLElement {
     const showNames = this._config.compact_show_names !== false;
     const showPercentage = this._config.compact_show_percentage !== false;
     const showUrgency = this._config.compact_show_urgency === true;
+    const showTileBackground = this._config.compact_show_tile_background !== false;
     return `
-      <button class="compact-tile" title="${tracker.title}: ${tracker.days_since_done} day${tracker.days_since_done === 1 ? "" : "s"} passed, ${urgency.label}" data-compact-id="${tracker.id}">
+      <button class="compact-tile ${showTileBackground ? "compact-tile-surface" : "compact-tile-plain"}" title="${tracker.title}: ${tracker.days_since_done} day${tracker.days_since_done === 1 ? "" : "s"} passed, ${urgency.label}" data-compact-id="${tracker.id}">
         <div class="compact-dial-wrap" style="--tracker-color:${urgency.color};--tracker-accent:${urgency.accent};">
           <svg class="compact-dial" viewBox="0 0 60 60" aria-hidden="true">
             <circle class="dial-bg" cx="30" cy="30" r="24"></circle>
@@ -466,6 +486,22 @@ class MaintenanceTrackerManager extends HTMLElement {
           ${showNames ? `<div class="compact-title">${tracker.title}</div>` : ""}
           ${showPercentage ? `<div class="compact-subtitle">${progressPercent}%</div>` : ""}
           ${showUrgency ? `<div class="compact-urgency" style="color:${urgency.color};">${urgency.label}</div>` : ""}
+        </div>
+      </button>
+    `;
+  }
+
+  _renderBadgeTracker(tracker) {
+    const urgency = this._urgencyInfo(tracker);
+    const textColor = urgency.priority >= 2 ? "#111827" : "#ffffff";
+    return `
+      <button class="badge-tile" style="--badge-bg:${urgency.color};--badge-fg:${textColor};" title="${tracker.title}: ${this._summaryText(tracker, { natural: true })}" data-badge-id="${tracker.id}">
+        <div class="badge-icon">
+          <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
+        </div>
+        <div class="badge-copy">
+          <div class="badge-title">${tracker.title}</div>
+          <div class="badge-summary">${this._summaryText(tracker, { natural: true })}</div>
         </div>
       </button>
     `;
@@ -560,9 +596,13 @@ class MaintenanceTrackerManager extends HTMLElement {
       ? displayTrackers.map((tracker) => this._renderTracker(tracker)).join("")
       : `<div class="empty-state">No trackers yet. Add one to get started.</div>`;
     const isCompact = this._config.mode === "compact";
+    const isBadge = this._config.mode === "badge";
     const compactMarkup = displayTrackers.length
       ? displayTrackers.map((tracker) => this._renderCompactTracker(tracker)).join("")
       : `<div class="empty-state">No trackers selected for compact view.</div>`;
+    const badgeMarkup = displayTrackers.length
+      ? displayTrackers.map((tracker) => this._renderBadgeTracker(tracker)).join("")
+      : `<div class="empty-state">No trackers selected for badge view.</div>`;
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -599,24 +639,75 @@ class MaintenanceTrackerManager extends HTMLElement {
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 10px;
         }
+        .badge-shell {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .badge-tile {
+          appearance: none;
+          border: none;
+          border-radius: 999px;
+          padding: 12px 18px;
+          background: var(--badge-bg);
+          color: var(--badge-fg);
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          text-align: left;
+          box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+          font: inherit;
+        }
+        .badge-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--badge-fg);
+        }
+        .badge-icon ha-icon {
+          --mdc-icon-size: 28px;
+        }
+        .badge-copy {
+          display: grid;
+          gap: 1px;
+          line-height: 1.05;
+        }
+        .badge-title {
+          font-size: 0.9rem;
+          font-weight: 700;
+        }
+        .badge-summary {
+          font-size: 0.88rem;
+          font-weight: 700;
+          opacity: 0.92;
+        }
         .compact-tile {
           appearance: none;
-          border: var(--ha-card-border-width, 1px) solid var(--divider-color);
           border-radius: 18px;
           padding: 10px 8px 8px;
-          background: var(--ha-card-background, var(--card-background-color));
           color: var(--primary-text-color);
           display: grid;
           justify-items: center;
           gap: 8px;
           text-align: center;
           cursor: default;
+        }
+        .compact-tile-surface {
+          border: var(--ha-card-border-width, 1px) solid var(--divider-color);
+          background: var(--ha-card-background, var(--card-background-color));
           box-shadow: var(--ha-card-box-shadow, none);
+        }
+        .compact-tile-plain {
+          border: none;
+          background: transparent;
+          box-shadow: none;
         }
         .compact-dial-wrap {
           position: relative;
           width: 60px;
           height: 60px;
+          border-radius: 999px;
+          background: rgba(18, 22, 28, 0.82);
         }
         .compact-dial {
           width: 60px;
@@ -1002,6 +1093,20 @@ class MaintenanceTrackerManager extends HTMLElement {
           padding: 8px 4px;
         }
         @media (max-width: 600px) {
+          .badge-shell {
+            gap: 8px;
+          }
+          .badge-tile {
+            padding: 10px 14px;
+            gap: 10px;
+          }
+          .badge-icon ha-icon {
+            --mdc-icon-size: 24px;
+          }
+          .badge-title,
+          .badge-summary {
+            font-size: 0.82rem;
+          }
           .compact-shell {
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 8px;
@@ -1046,11 +1151,11 @@ class MaintenanceTrackerManager extends HTMLElement {
       <ha-card>
         <div class="shell">
           <div class="header">
-            ${isCompact ? "" : `<div class="subtitle">${displayTrackers.length ? this._headerSummary() : "Circular dials for quick maintenance status at a glance"}</div>`}
-            ${isCompact ? "" : `<button class="add-button" id="add-tracker">Add tracker</button>`}
+            ${(isCompact || isBadge) ? "" : `<div class="subtitle">${displayTrackers.length ? this._headerSummary() : "Circular dials for quick maintenance status at a glance"}</div>`}
+            ${(isCompact || isBadge) ? "" : `<button class="add-button" id="add-tracker">Add tracker</button>`}
           </div>
           ${this._error ? `<div class="error">${this._error}</div>` : ""}
-          ${this._loading ? `<div class="empty-state">Loading trackers...</div>` : isCompact ? `<div class="compact-shell">${compactMarkup}</div>` : `<div class="grid">${trackersMarkup}</div>`}
+          ${this._loading ? `<div class="empty-state">Loading trackers...</div>` : isCompact ? `<div class="compact-shell">${compactMarkup}</div>` : isBadge ? `<div class="badge-shell">${badgeMarkup}</div>` : `<div class="grid">${trackersMarkup}</div>`}
         </div>
       </ha-card>
       ${this._renderDialog()}
@@ -1159,6 +1264,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       compact_show_names: true,
       compact_show_percentage: true,
       compact_show_urgency: false,
+      compact_show_tile_background: true,
       ...config,
     };
     this._render();
@@ -1248,10 +1354,11 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
           <select id="mode">
             <option value="manager" ${mode === "manager" ? "selected" : ""}>Manager</option>
             <option value="compact" ${mode === "compact" ? "selected" : ""}>Compact row</option>
+            <option value="badge" ${mode === "badge" ? "selected" : ""}>Badge</option>
           </select>
         </label>
         <label>
-          Compact item count
+          Display item count
           <input id="compact-count" type="number" min="1" max="8" value="${Number(this._config?.compact_count || 4)}" />
         </label>
         <div class="picker">
@@ -1268,6 +1375,10 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
             <label class="picker-item">
               <input id="compact-show-urgency" type="checkbox" ${this._config?.compact_show_urgency === true ? "checked" : ""} />
               <span>Show urgency</span>
+            </label>
+            <label class="picker-item">
+              <input id="compact-show-tile-background" type="checkbox" ${this._config?.compact_show_tile_background !== false ? "checked" : ""} />
+              <span>Show tile background</span>
             </label>
           </div>
         </div>
@@ -1304,6 +1415,9 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     });
     this.shadowRoot.getElementById("compact-show-urgency").addEventListener("change", (event) => {
       this._emitConfig({ compact_show_urgency: event.target.checked });
+    });
+    this.shadowRoot.getElementById("compact-show-tile-background").addEventListener("change", (event) => {
+      this._emitConfig({ compact_show_tile_background: event.target.checked });
     });
     this.shadowRoot.querySelectorAll("[data-slug]").forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
