@@ -34,6 +34,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._loadIntervalMs = 60 * 60 * 1000;
     this._allIconOptions = null;
     this._allIconsPromise = null;
+    this._compactResetArmedId = null;
   }
 
   static get ICON_OPTIONS() {
@@ -620,10 +621,19 @@ class MaintenanceTrackerManager extends HTMLElement {
     }
   }
 
-  async _confirmResetTracker(tracker) {
+  _clearCompactResetArm() {
+    this._compactResetArmedId = null;
+  }
+
+  async _handleCompactTrackerTap(tracker) {
     if (!tracker) return;
-    if (!confirm(`Reset "${tracker.title}" now?`)) return;
-    await this._resetTracker(tracker);
+    if (this._compactResetArmedId === tracker.id) {
+      this._compactResetArmedId = null;
+      await this._resetTracker(tracker);
+      return;
+    }
+    this._compactResetArmedId = tracker.id;
+    this._render();
   }
 
   _renderTracker(tracker) {
@@ -692,16 +702,19 @@ class MaintenanceTrackerManager extends HTMLElement {
     const showUrgency = this._config.compact_show_urgency === true;
     const showTileBackground = this._config.compact_show_tile_background !== false;
     const showDialBackground = this._config.compact_show_dial_background !== false;
+    const isResetArmed = this._compactResetArmedId === tracker.id;
+    const compactIcon = isResetArmed ? "mdi:refresh" : (tracker.icon || "mdi:hammer-wrench");
+    const compactIconColor = isResetArmed ? "#d9485f" : urgency.color;
     return `
-      <button class="compact-tile ${showTileBackground ? "compact-tile-surface" : "compact-tile-plain"}" title="${tracker.title}: ${tracker.days_since_done} day${tracker.days_since_done === 1 ? "" : "s"} passed, ${urgency.label}" data-compact-id="${tracker.id}">
+      <button class="compact-tile ${showTileBackground ? "compact-tile-surface" : "compact-tile-plain"}" title="${isResetArmed ? `Tap again to reset ${tracker.title}` : `${tracker.title}: ${tracker.days_since_done} day${tracker.days_since_done === 1 ? "" : "s"} passed, ${urgency.label}`}" data-compact-id="${tracker.id}">
         <div class="compact-dial-wrap ${showDialBackground ? "compact-dial-wrap-solid" : "compact-dial-wrap-transparent"}" style="--tracker-color:${urgency.color};--tracker-accent:${urgency.accent};">
           <svg class="compact-dial" viewBox="0 0 60 60" aria-hidden="true">
             <circle class="dial-bg" cx="30" cy="30" r="24"></circle>
             <circle class="dial-progress" cx="30" cy="30" r="24" style="stroke:${urgency.color};stroke-dasharray:${circumference};stroke-dashoffset:${dashOffset};"></circle>
           </svg>
           <div class="compact-dial-center">
-            <div class="compact-dial-center-fill">
-              <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
+            <div class="compact-dial-center-fill" style="color:${compactIconColor};">
+              <ha-icon icon="${compactIcon}"></ha-icon>
             </div>
           </div>
         </div>
@@ -1471,10 +1484,19 @@ class MaintenanceTrackerManager extends HTMLElement {
     `;
 
     this.shadowRoot.getElementById("add-tracker")?.addEventListener("click", () => {
+      this._clearCompactResetArm();
       this._openDialog("create");
     });
+    this.shadowRoot.addEventListener("click", (event) => {
+      if (!this._compactResetArmedId) return;
+      const armedTile = event.target.closest?.(`[data-compact-id="${this._compactResetArmedId}"]`);
+      if (armedTile) return;
+      this._clearCompactResetArm();
+      requestAnimationFrame(() => this._render());
+    }, { capture: true });
     this.shadowRoot.querySelectorAll("[data-action]").forEach((button) => {
       button.addEventListener("click", () => {
+        this._clearCompactResetArm();
         const tracker = this._trackers.find((item) => item.id === button.dataset.id);
         if (!tracker) return;
         const action = button.dataset.action;
@@ -1487,11 +1509,14 @@ class MaintenanceTrackerManager extends HTMLElement {
       button.addEventListener("click", () => {
         const tracker = this._trackers.find((item) => item.id === button.dataset.compactId);
         if (!tracker) return;
-        this._confirmResetTracker(tracker);
+        this._handleCompactTrackerTap(tracker);
       });
     });
     this.shadowRoot.querySelectorAll("[data-close-dialog]").forEach((button) => {
-      button.addEventListener("click", () => this._closeDialog());
+      button.addEventListener("click", () => {
+        this._clearCompactResetArm();
+        this._closeDialog();
+      });
     });
     this.shadowRoot.getElementById("tracker-form")?.addEventListener("submit", (event) => {
       this._submitDialog(event);
