@@ -32,6 +32,8 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._suspendTrackerRefresh = false;
     this._lastLoadedAt = 0;
     this._loadIntervalMs = 60 * 60 * 1000;
+    this._allIconOptions = null;
+    this._allIconsPromise = null;
   }
 
   static get ICON_OPTIONS() {
@@ -347,6 +349,8 @@ class MaintenanceTrackerManager extends HTMLElement {
       tracker: trackerState,
       iconQuery: this._iconLabel(trackerState.icon || "mdi:hammer-wrench"),
       iconPickerOpen: false,
+      iconPickerMode: "common",
+      allIconsLoading: false,
     };
     this._suspendTrackerRefresh = true;
     this._render();
@@ -386,6 +390,42 @@ class MaintenanceTrackerManager extends HTMLElement {
     return this._iconLabel(icon).replace(/\b\w/g, (match) => match.toUpperCase());
   }
 
+  async _ensureAllIconsLoaded() {
+    if (Array.isArray(this._allIconOptions) && this._allIconOptions.length) {
+      return this._allIconOptions;
+    }
+    if (this._allIconsPromise) {
+      return this._allIconsPromise;
+    }
+
+    this._allIconsPromise = fetch(new URL("./mdi-icons.json", import.meta.url))
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`mdi icon catalog fetch failed: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((icons) => {
+        const normalized = Array.isArray(icons)
+          ? icons
+            .map((icon) => `${icon || ""}`.trim())
+            .filter(Boolean)
+            .map((icon) => (icon.startsWith("mdi:") ? icon : `mdi:${icon}`))
+          : [];
+        this._allIconOptions = normalized.length ? normalized : MaintenanceTrackerManager.ICON_OPTIONS;
+        return this._allIconOptions;
+      })
+      .catch(() => {
+        this._allIconOptions = MaintenanceTrackerManager.ICON_OPTIONS;
+        return this._allIconOptions;
+      })
+      .finally(() => {
+        this._allIconsPromise = null;
+      });
+
+    return this._allIconsPromise;
+  }
+
   _iconSearchTerms(icon) {
     const label = this._iconLabel(icon);
     const slug = label.replace(/\s+/g, "-");
@@ -412,6 +452,30 @@ class MaintenanceTrackerManager extends HTMLElement {
     const tokens = cleaned.split(/\s+/).filter(Boolean);
     const terms = this._iconSearchTerms(icon);
     return tokens.every((token) => terms.some((term) => this._fuzzyMatches(term, token)));
+  }
+
+  _allIconMatches(query) {
+    const icons = Array.isArray(this._allIconOptions) && this._allIconOptions.length
+      ? this._allIconOptions
+      : MaintenanceTrackerManager.ICON_OPTIONS;
+    const matches = icons.filter((icon) => this._matchesIconQuery(icon, query));
+    if (this._normalizeIconQuery(query)) {
+      return matches.slice(0, 240);
+    }
+    return matches.slice(0, 160);
+  }
+
+  _rerenderDialogAndRestoreIconInput(selectionStart = null, selectionEnd = null) {
+    this._render();
+    requestAnimationFrame(() => {
+      const nextInput = this.shadowRoot?.querySelector('input[name="icon"]');
+      if (!nextInput) return;
+      nextInput.focus();
+      const end = nextInput.value.length;
+      const startPos = selectionStart == null ? end : Math.min(selectionStart, end);
+      const endPos = selectionEnd == null ? end : Math.min(selectionEnd, end);
+      nextInput.setSelectionRange(startPos, endPos);
+    });
   }
 
   _resolveIconValue(value, fallback = "mdi:hammer-wrench") {
@@ -631,7 +695,10 @@ class MaintenanceTrackerManager extends HTMLElement {
     );
     const previewCircumference = 2 * Math.PI * 32;
     const previewColor = "#2a9d8f";
-    const groupedIcons = this._groupedIcons(this._dialog.iconQuery);
+    const iconPickerMode = this._dialog.iconPickerMode || "common";
+    const groupedIcons = iconPickerMode === "all" ? [] : this._groupedIcons(this._dialog.iconQuery);
+    const allIcons = iconPickerMode === "all" ? this._allIconMatches(this._dialog.iconQuery) : [];
+    const hasQuery = Boolean(this._normalizeIconQuery(this._dialog.iconQuery));
     return `
       <div class="dialog-backdrop">
         <div class="dialog">
@@ -663,12 +730,32 @@ class MaintenanceTrackerManager extends HTMLElement {
                   <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
                 </div>
                 <input name="icon" id="icon-search-input" value="${this._dialog.iconQuery || ""}" placeholder="Search icons" autocomplete="off" autocapitalize="off" spellcheck="false" />
-                <button type="button" class="action icon-picker-toggle" id="toggle-icon-picker">${this._dialog.iconPickerOpen ? "Hide icons" : "Browse icons"}</button>
+                <div class="icon-picker-actions">
+                  <button type="button" class="action ${iconPickerMode === "common" ? "action-primary" : ""}" id="show-common-icons">Common icons</button>
+                  <button type="button" class="action ${iconPickerMode === "all" ? "action-primary" : ""}" id="show-all-icons">All MDI</button>
+                </div>
               </div>
               ${this._dialog.iconPickerOpen ? `
                 <div class="icon-picker-panel">
-                  <div class="icon-picker-help">Type to filter, then tap an icon.</div>
-                  ${groupedIcons.length ? groupedIcons.map((group) => `
+                  <div class="icon-picker-help">${this._dialog.allIconsLoading
+                    ? "Loading the full Material Design Icons catalog..."
+                    : iconPickerMode === "all"
+                      ? (hasQuery
+                        ? "Search results from the full Material Design Icons catalog."
+                        : "Showing the first set of Material Design Icons. Type to narrow it down.")
+                      : "Common icons for common tasks. Type to search the full Material Design Icons catalog."}</div>
+                  ${iconPickerMode === "all" ? `
+                    ${allIcons.length ? `
+                      <div class="icon-grid icon-grid-all">
+                        ${allIcons.map((icon) => `
+                          <button type="button" class="icon-tile ${icon === tracker.icon ? "icon-tile-active" : ""}" data-icon-choice="${icon}">
+                            <ha-icon icon="${icon}"></ha-icon>
+                            <span>${this._iconDisplayLabel(icon)}</span>
+                          </button>
+                        `).join("")}
+                      </div>
+                    ` : `<div class="icon-empty">No icons match that search.</div>`}
+                  ` : groupedIcons.length ? groupedIcons.map((group) => `
                     <div class="icon-group">
                       <div class="icon-group-label">${group.label}</div>
                       <div class="icon-grid">
@@ -1161,7 +1248,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           grid-template-columns: auto 1fr;
           grid-template-areas:
             "preview input"
-            "toggle toggle";
+            "actions actions";
           gap: 8px;
           align-items: center;
         }
@@ -1184,10 +1271,11 @@ class MaintenanceTrackerManager extends HTMLElement {
           grid-area: input;
           min-width: 0;
         }
-        .icon-picker-toggle {
-          grid-area: toggle;
-          white-space: nowrap;
-          justify-content: center;
+        .icon-picker-actions {
+          grid-area: actions;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
         }
         .icon-picker-panel {
           border: 1px solid rgba(127,127,127,0.16);
@@ -1204,6 +1292,11 @@ class MaintenanceTrackerManager extends HTMLElement {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
           gap: 8px;
+        }
+        .icon-grid-all {
+          max-height: min(44dvh, 420px);
+          overflow-y: auto;
+          padding-right: 4px;
         }
         .icon-group + .icon-group {
           margin-top: 12px;
@@ -1351,8 +1444,28 @@ class MaintenanceTrackerManager extends HTMLElement {
     const previewTitle = this.shadowRoot.querySelector(".dialog-preview-title");
     const previewIcon = this.shadowRoot.querySelector(".dialog-preview-center ha-icon");
     const iconBarPreview = this.shadowRoot.querySelector(".icon-picker-preview ha-icon");
-    const toggleIconPicker = this.shadowRoot.getElementById("toggle-icon-picker");
+    const showCommonIcons = this.shadowRoot.getElementById("show-common-icons");
+    const showAllIcons = this.shadowRoot.getElementById("show-all-icons");
     const applyIconFilter = (query) => {
+      if (this._dialog?.iconPickerMode === "all") {
+        const allTiles = Array.from(this.shadowRoot.querySelectorAll(".icon-grid-all .icon-tile"));
+        if (!allTiles.length) {
+          this._rerenderDialogAndRestoreIconInput(iconInput?.selectionStart, iconInput?.selectionEnd);
+          return;
+        }
+        let visibleCount = 0;
+        allTiles.forEach((tile) => {
+          const icon = tile.dataset.iconChoice || "";
+          const visible = this._matchesIconQuery(icon, query);
+          tile.hidden = !visible;
+          if (visible) visibleCount += 1;
+        });
+        const emptyState = this.shadowRoot.querySelector(".icon-empty");
+        if (emptyState) {
+          emptyState.hidden = visibleCount > 0;
+        }
+        return;
+      }
       this.shadowRoot.querySelectorAll(".icon-group").forEach((group) => {
         let visibleCount = 0;
         group.querySelectorAll(".icon-tile").forEach((tile) => {
@@ -1375,22 +1488,46 @@ class MaintenanceTrackerManager extends HTMLElement {
       });
     }
     if (iconInput && previewIcon) {
-      iconInput.addEventListener("focus", () => {
-        if (!this._dialog || this._dialog.iconPickerOpen) return;
-        this._dialog.iconPickerOpen = true;
-        this._render();
-      });
       iconInput.addEventListener("input", () => {
-        if (this._dialog) {
-          this._dialog.iconQuery = iconInput.value.trim();
-          this._dialog.iconPickerOpen = true;
+        if (!this._dialog) return;
+        const selectionStart = iconInput.selectionStart;
+        const selectionEnd = iconInput.selectionEnd;
+        this._dialog.iconQuery = iconInput.value.trim();
+        this._dialog.iconPickerOpen = true;
+        this._dialog.iconPickerMode = "all";
+        if (!this._allIconOptions && !this._dialog.allIconsLoading) {
+          this._dialog.allIconsLoading = true;
+          this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
+          void this._ensureAllIconsLoaded().then(() => {
+            if (!this._dialog) return;
+            this._dialog.allIconsLoading = false;
+            this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
+          });
+          return;
         }
         applyIconFilter(iconInput.value);
       });
     }
-    toggleIconPicker?.addEventListener("click", () => {
+    showCommonIcons?.addEventListener("click", () => {
       if (!this._dialog) return;
-      this._dialog.iconPickerOpen = !this._dialog.iconPickerOpen;
+      this._dialog.iconPickerOpen = true;
+      this._dialog.iconPickerMode = "common";
+      this._render();
+    });
+    showAllIcons?.addEventListener("click", () => {
+      if (!this._dialog) return;
+      this._dialog.iconPickerOpen = true;
+      this._dialog.iconPickerMode = "all";
+      if (!this._allIconOptions && !this._dialog.allIconsLoading) {
+        this._dialog.allIconsLoading = true;
+        this._render();
+        void this._ensureAllIconsLoaded().then(() => {
+          if (!this._dialog) return;
+          this._dialog.allIconsLoading = false;
+          this._render();
+        });
+        return;
+      }
       this._render();
     });
     this.shadowRoot.querySelectorAll("[data-icon-choice]").forEach((button) => {
