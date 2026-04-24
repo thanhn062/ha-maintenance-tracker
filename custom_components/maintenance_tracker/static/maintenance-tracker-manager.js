@@ -8,6 +8,8 @@ class MaintenanceTrackerManager extends HTMLElement {
       title: "Maintenance Tracker",
       mode: "manager",
       compact_count: 4,
+      visibility_due_days: 3,
+      visibility_overdue_days: 10,
       selected_trackers: [],
       compact_show_names: true,
       compact_show_age_lifespan: true,
@@ -258,8 +260,16 @@ class MaintenanceTrackerManager extends HTMLElement {
       ? this._trackers.filter((tracker) => selectedSet.has((tracker.slug || tracker.id || "").toLowerCase()))
       : [...this._trackers];
     if (this._config.mode === "compact" || this._config.mode === "badge") {
+      const dueDays = Math.max(0, Number(this._config.visibility_due_days ?? 3));
+      const overdueDays = Math.max(0, Number(this._config.visibility_overdue_days ?? 10));
+      const filtered = visible.filter((tracker) => {
+        const trackerOverdueDays = Math.max(0, Number(tracker.days_overdue || 0));
+        if (trackerOverdueDays > 0) return trackerOverdueDays <= overdueDays;
+        const daysRemaining = Math.max(0, Number(tracker.days_remaining || 0));
+        return daysRemaining <= dueDays;
+      });
       const compactCount = Math.max(1, Math.min(Number(this._config.compact_count || 4), 8));
-      return visible.slice(0, compactCount);
+      return filtered.slice(0, compactCount);
     }
     return visible;
   }
@@ -1305,6 +1315,8 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       title: "Maintenance Tracker",
       mode: "manager",
       compact_count: 4,
+      visibility_due_days: 3,
+      visibility_overdue_days: 10,
       selected_trackers: [],
       compact_show_names: true,
       compact_show_age_lifespan: true,
@@ -1409,6 +1421,17 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
           <input id="compact-count" type="number" min="1" max="8" value="${Number(this._config?.compact_count || 4)}" />
         </label>
         <div class="picker">
+          <div class="picker-title">Visibility</div>
+          <label>
+            Show when due within days
+            <input id="visibility-due-days" type="number" min="0" max="3650" value="${Number(this._config?.visibility_due_days ?? 3)}" />
+          </label>
+          <label>
+            Show while overdue up to days
+            <input id="visibility-overdue-days" type="number" min="0" max="3650" value="${Number(this._config?.visibility_overdue_days ?? 10)}" />
+          </label>
+        </div>
+        <div class="picker">
           <div class="picker-title">Compact display options</div>
           <div class="option-grid">
             <label class="picker-item">
@@ -1461,6 +1484,12 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     });
     this.shadowRoot.getElementById("compact-count").addEventListener("input", (event) => {
       this._emitConfig({ compact_count: Number(event.target.value || 4) });
+    });
+    this.shadowRoot.getElementById("visibility-due-days").addEventListener("input", (event) => {
+      this._emitConfig({ visibility_due_days: Number(event.target.value || 0) });
+    });
+    this.shadowRoot.getElementById("visibility-overdue-days").addEventListener("input", (event) => {
+      this._emitConfig({ visibility_overdue_days: Number(event.target.value || 0) });
     });
     this.shadowRoot.getElementById("compact-show-names").addEventListener("change", (event) => {
       this._emitConfig({ compact_show_names: event.target.checked });
