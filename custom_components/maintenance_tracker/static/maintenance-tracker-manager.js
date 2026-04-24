@@ -717,7 +717,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           border-radius: 999px;
         }
         .compact-dial-wrap-solid {
-          --compact-dial-track-bg: rgba(18, 22, 28, 0.82);
+          --compact-dial-track-bg: rgba(52, 58, 68, 0.88);
           --compact-dial-center-bg: rgba(18, 22, 28, 0.94);
         }
         .compact-dial-wrap-transparent {
