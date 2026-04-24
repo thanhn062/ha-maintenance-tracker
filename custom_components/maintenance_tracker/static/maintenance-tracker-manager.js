@@ -35,6 +35,8 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._allIconOptions = null;
     this._allIconsPromise = null;
     this._compactResetArmedId = null;
+    this._eventUnsubscribe = null;
+    this._subscribedHass = null;
   }
 
   static get ICON_OPTIONS() {
@@ -189,6 +191,7 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    this._ensureEventSubscription();
     if (this._dialog && this._suspendTrackerRefresh) {
       return;
     }
@@ -203,7 +206,12 @@ class MaintenanceTrackerManager extends HTMLElement {
   }
 
   connectedCallback() {
+    this._ensureEventSubscription();
     this._render();
+  }
+
+  disconnectedCallback() {
+    this._teardownEventSubscription();
   }
 
   getCardSize() {
@@ -212,6 +220,43 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   async _callWS(type, payload = {}) {
     return this._hass.callWS({ type, ...payload });
+  }
+
+  _ensureEventSubscription() {
+    if (!this._hass?.connection) return;
+    if (this._subscribedHass === this._hass && this._eventUnsubscribe) return;
+    this._teardownEventSubscription();
+    this._subscribedHass = this._hass;
+    this._hass.connection.subscribeEvents(
+      () => {
+        this._lastLoadedAt = 0;
+        this._loadTrackers();
+      },
+      "maintenance_tracker_updated",
+    ).then((unsubscribe) => {
+      if (this._subscribedHass !== this._hass) {
+        unsubscribe?.();
+        return;
+      }
+      this._eventUnsubscribe = unsubscribe;
+    }).catch(() => {});
+  }
+
+  _teardownEventSubscription() {
+    if (this._eventUnsubscribe) {
+      this._eventUnsubscribe();
+    }
+    this._eventUnsubscribe = null;
+    this._subscribedHass = null;
+  }
+
+  _showToast(message) {
+    if (!message) return;
+    this.dispatchEvent(new CustomEvent("hass-notification", {
+      detail: { message },
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   async _loadTrackers() {
@@ -615,6 +660,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       });
       this._lastLoadedAt = 0;
       await this._loadTrackers();
+      this._showToast(`${tracker.title} reset.`);
     } catch (err) {
       this._error = err?.message || String(err);
       this._render();
