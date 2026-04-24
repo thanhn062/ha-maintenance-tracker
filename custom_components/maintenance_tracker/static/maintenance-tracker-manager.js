@@ -479,6 +479,35 @@ class MaintenanceTrackerManager extends HTMLElement {
     if (notesInput) this._dialog.tracker.notes = notesInput.value;
   }
 
+  _keepFieldVisible(field) {
+    if (!field) return;
+    const scrollIntoView = () => {
+      field.scrollIntoView({
+        block: "center",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+    };
+    requestAnimationFrame(() => {
+      setTimeout(scrollIntoView, 120);
+      setTimeout(scrollIntoView, 320);
+    });
+  }
+
+  _bindDialogFieldFocus(field, { preventEnterSubmit = false } = {}) {
+    if (!field) return;
+    field.addEventListener("focus", () => {
+      this._keepFieldVisible(field);
+    });
+    if (preventEnterSubmit) {
+      field.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        event.stopPropagation();
+      });
+    }
+  }
+
   _rerenderDialogAndRestoreIconInput(selectionStart = null, selectionEnd = null) {
     this._syncDialogTrackerFromForm();
     this._render();
@@ -1117,7 +1146,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           flex-wrap: unset;
         }
         .dialog-bottom-spacer {
-          height: 18px;
+          height: 120px;
           pointer-events: none;
         }
         .action,
@@ -1498,6 +1527,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       }
     };
     if (titleInput && previewTitle) {
+      this._bindDialogFieldFocus(titleInput, { preventEnterSubmit: true });
       titleInput.addEventListener("input", () => {
         if (this._dialog) {
           this._dialog.tracker.title = titleInput.value;
@@ -1506,30 +1536,35 @@ class MaintenanceTrackerManager extends HTMLElement {
       });
     }
     const lifespanInput = this.shadowRoot.querySelector('input[name="lifespan_days"]');
+    this._bindDialogFieldFocus(lifespanInput, { preventEnterSubmit: true });
     lifespanInput?.addEventListener("input", () => {
       if (this._dialog) {
         this._dialog.tracker.lifespan_days = Number(lifespanInput.value || 14);
       }
     });
     const lastDoneInput = this.shadowRoot.querySelector('input[name="last_done"]');
+    this._bindDialogFieldFocus(lastDoneInput, { preventEnterSubmit: true });
     lastDoneInput?.addEventListener("input", () => {
       if (this._dialog) {
         this._dialog.tracker.last_done = lastDoneInput.value;
       }
     });
     const categoryInput = this.shadowRoot.querySelector('input[name="category"]');
+    this._bindDialogFieldFocus(categoryInput, { preventEnterSubmit: true });
     categoryInput?.addEventListener("input", () => {
       if (this._dialog) {
         this._dialog.tracker.category = categoryInput.value;
       }
     });
     const notesInput = this.shadowRoot.querySelector('textarea[name="notes"]');
+    this._bindDialogFieldFocus(notesInput);
     notesInput?.addEventListener("input", () => {
       if (this._dialog) {
         this._dialog.tracker.notes = notesInput.value;
       }
     });
     if (iconInput && previewIcon) {
+      this._bindDialogFieldFocus(iconInput);
       iconInput.addEventListener("input", () => {
         if (!this._dialog) return;
         this._syncDialogTrackerFromForm();
