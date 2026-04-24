@@ -69,6 +69,41 @@ class MaintenanceTrackerManager extends HTMLElement {
     ];
   }
 
+  static get ICON_SEARCH_ALIASES() {
+    return {
+      "mdi:hammer-wrench": ["maintenance", "repair", "fix", "tools", "service"],
+      "mdi:bed": ["bedsheet", "sheet", "sheets", "linen", "blanket", "pillow", "mattress", "bedding"],
+      "mdi:curtains": ["curtain", "blinds", "drapes", "shade", "window treatment"],
+      "mdi:ceiling-light": ["light", "lamp", "bulb", "fixture"],
+      "mdi:fan": ["cooling", "air", "circulate", "vent"],
+      "mdi:sofa": ["couch", "living room", "seat"],
+      "mdi:vacuum": ["clean", "cleaning", "floor", "carpet", "dust"],
+      "mdi:washing-machine": ["laundry", "wash", "washer", "clothes"],
+      "mdi:tshirt-crew": ["clothes", "wardrobe", "shirt", "fabric"],
+      "mdi:shower": ["bathroom", "bath", "rinse"],
+      "mdi:toilet": ["bathroom", "restroom", "wc"],
+      "mdi:flower": ["plant", "garden", "bloom"],
+      "mdi:fridge-outline": ["refrigerator", "kitchen", "cooling"],
+      "mdi:microwave": ["kitchen", "appliance", "oven"],
+      "mdi:air-purifier": ["filter", "air", "purifier", "purify"],
+      "mdi:spray-bottle": ["clean", "cleaning", "spray", "bottle"],
+      "mdi:trash-can-outline": ["trash", "garbage", "bin", "waste", "recycle"],
+      "mdi:calendar-check": ["schedule", "due", "date", "plan", "reminder"],
+      "mdi:tools": ["toolbox", "gear", "equipment"],
+      "mdi:lightbulb": ["light", "bulb", "lamp", "lighting"],
+      "mdi:lamp": ["light", "bedside", "lighting"],
+      "mdi:door-sliding": ["door", "entry", "patio"],
+      "mdi:window-open-variant": ["window", "glass", "screen"],
+      "mdi:desk": ["office", "computer", "pc", "workstation", "table"],
+      "mdi:toothbrush-paste": ["toothbrush", "toothpaste", "dental", "teeth", "bathroom"],
+      "mdi:paw": ["pet", "dog", "cat", "animal", "litter"],
+      "mdi:leaf": ["plant", "green", "garden", "foliage"],
+      "mdi:water": ["humidifier", "water", "tank", "refill"],
+      "mdi:home-heart": ["home", "house", "care"],
+      "mdi:broom": ["sweep", "sweeping", "clean", "cleaning", "floor"],
+    };
+  }
+
   static get ICON_GROUPS() {
     return [
       {
@@ -351,6 +386,34 @@ class MaintenanceTrackerManager extends HTMLElement {
     return this._iconLabel(icon).replace(/\b\w/g, (match) => match.toUpperCase());
   }
 
+  _iconSearchTerms(icon) {
+    const label = this._iconLabel(icon);
+    const slug = label.replace(/\s+/g, "-");
+    const compact = label.replace(/\s+/g, "");
+    const aliases = MaintenanceTrackerManager.ICON_SEARCH_ALIASES[icon] || [];
+    return [label, slug, compact, ...aliases.map((alias) => this._normalizeIconQuery(alias))];
+  }
+
+  _fuzzyMatches(term, token) {
+    if (!token) return true;
+    if (!term) return false;
+    if (term.includes(token)) return true;
+    let index = 0;
+    for (const char of term) {
+      if (char === token[index]) index += 1;
+      if (index === token.length) return true;
+    }
+    return false;
+  }
+
+  _matchesIconQuery(icon, query) {
+    const cleaned = this._normalizeIconQuery(query);
+    if (!cleaned) return true;
+    const tokens = cleaned.split(/\s+/).filter(Boolean);
+    const terms = this._iconSearchTerms(icon);
+    return tokens.every((token) => terms.some((term) => this._fuzzyMatches(term, token)));
+  }
+
   _resolveIconValue(value, fallback = "mdi:hammer-wrench") {
     const raw = `${value || ""}`.trim();
     if (!raw) return fallback || "mdi:hammer-wrench";
@@ -366,29 +429,17 @@ class MaintenanceTrackerManager extends HTMLElement {
   }
 
   _filteredIcons(query) {
-    const cleaned = this._normalizeIconQuery(query);
     const icons = MaintenanceTrackerManager.ICON_OPTIONS;
-    if (!cleaned) return icons;
-    return icons.filter((icon) => {
-      const label = this._iconLabel(icon);
-      const slug = label.replace(/\s+/g, "-");
-      return label.includes(cleaned) || slug.includes(cleaned);
-    });
+    return icons.filter((icon) => this._matchesIconQuery(icon, query));
   }
 
   _groupedIcons(query) {
-    const cleaned = this._normalizeIconQuery(query);
     const groups = MaintenanceTrackerManager.ICON_GROUPS.map((group) => ({
       label: group.label,
-      icons: group.icons.filter((icon) => {
-        if (!cleaned) return true;
-        const label = this._iconLabel(icon);
-        const slug = label.replace(/\s+/g, "-");
-        return label.includes(cleaned) || slug.includes(cleaned);
-      }),
+      icons: group.icons.filter((icon) => this._matchesIconQuery(icon, query)),
     })).filter((group) => group.icons.length);
 
-    if (groups.length || !cleaned) return groups;
+    if (groups.length || !this._normalizeIconQuery(query)) return groups;
     return [
       {
         label: "Matches",
@@ -1302,14 +1353,11 @@ class MaintenanceTrackerManager extends HTMLElement {
     const iconBarPreview = this.shadowRoot.querySelector(".icon-picker-preview ha-icon");
     const toggleIconPicker = this.shadowRoot.getElementById("toggle-icon-picker");
     const applyIconFilter = (query) => {
-      const normalizedQuery = this._normalizeIconQuery(query);
       this.shadowRoot.querySelectorAll(".icon-group").forEach((group) => {
         let visibleCount = 0;
         group.querySelectorAll(".icon-tile").forEach((tile) => {
           const icon = tile.dataset.iconChoice || "";
-          const label = this._iconLabel(icon);
-          const slug = label.replace(/\s+/g, "-");
-          const visible = !normalizedQuery || label.includes(normalizedQuery) || slug.includes(normalizedQuery);
+          const visible = this._matchesIconQuery(icon, query);
           tile.hidden = !visible;
           if (visible) visibleCount += 1;
         });
