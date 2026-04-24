@@ -757,8 +757,8 @@ class MaintenanceTrackerManager extends HTMLElement {
                     : iconPickerMode === "all"
                       ? (hasQuery
                         ? "Search results from the full Material Design Icons catalog."
-                        : "Showing the first set of Material Design Icons. Type to narrow it down.")
-                      : "Common icons for common tasks. This list stays fixed; type to search the full Material Design Icons catalog."}</div>
+                        : "Press Enter in the search field to search all icons.")
+                      : "Common icons for common tasks. This list stays fixed; press Enter in the search field to search all icons."}</div>
                   ${iconPickerMode === "all" ? `
                     ${allIcons.length ? `
                       <div class="icon-grid icon-grid-all">
@@ -1533,6 +1533,14 @@ class MaintenanceTrackerManager extends HTMLElement {
       iconInput.addEventListener("input", () => {
         if (!this._dialog) return;
         this._syncDialogTrackerFromForm();
+        this._dialog.iconQuery = iconInput.value.trim();
+      });
+      iconInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this._dialog) return;
+        this._syncDialogTrackerFromForm();
         const selectionStart = iconInput.selectionStart;
         const selectionEnd = iconInput.selectionEnd;
         this._dialog.iconQuery = iconInput.value.trim();
@@ -1548,7 +1556,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           });
           return;
         }
-        applyIconFilter(iconInput.value);
+        this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
       });
     }
     showCommonIcons?.addEventListener("click", () => {
