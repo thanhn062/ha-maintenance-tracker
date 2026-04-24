@@ -481,7 +481,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         </div>
         <div class="compact-meta">
           ${showNames ? `<div class="compact-title">${tracker.title}</div>` : ""}
-          ${showAgeLifespan ? `<div class="compact-subtitle">Age ${ageDays}d • Life ${lifespanDays}d</div>` : ""}
+          ${showAgeLifespan ? `<div class="compact-subtitle">${ageDays}/${lifespanDays}</div>` : ""}
           ${showSummary ? `<div class="compact-summary">${this._summaryText(tracker, { natural: true })}</div>` : ""}
           ${showUrgency ? `<div class="compact-urgency" style="color:${urgency.color};">${urgency.label}</div>` : ""}
         </div>
