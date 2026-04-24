@@ -296,20 +296,21 @@ class MaintenanceTrackerManager extends HTMLElement {
     const localToday = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
       .toISOString()
       .slice(0, 10);
+    const trackerState = tracker
+      ? { ...tracker }
+      : {
+          title: "",
+          slug: "",
+          icon: "mdi:hammer-wrench",
+          lifespan_days: 14,
+          last_done: localToday,
+          notes: "",
+          category: "",
+        };
     this._dialog = {
       mode,
-      tracker: tracker
-        ? { ...tracker }
-        : {
-            title: "",
-            slug: "",
-            icon: "mdi:hammer-wrench",
-            lifespan_days: 14,
-            last_done: localToday,
-            notes: "",
-            category: "",
-          },
-      iconQuery: tracker?.icon || "",
+      tracker: trackerState,
+      iconQuery: this._iconLabel(trackerState.icon || "mdi:hammer-wrench"),
       iconPickerOpen: false,
     };
     this._suspendTrackerRefresh = true;
@@ -330,18 +331,61 @@ class MaintenanceTrackerManager extends HTMLElement {
       .replace(/^_+|_+$/g, "");
   }
 
+  _normalizeIconQuery(value) {
+    return `${value || ""}`
+      .trim()
+      .toLowerCase()
+      .replace(/^mdi:/, "")
+      .replace(/[_-]+/g, " ");
+  }
+
+  _iconLabel(icon) {
+    return `${icon || ""}`
+      .trim()
+      .toLowerCase()
+      .replace(/^mdi:/, "")
+      .replace(/[_-]+/g, " ");
+  }
+
+  _iconDisplayLabel(icon) {
+    return this._iconLabel(icon).replace(/\b\w/g, (match) => match.toUpperCase());
+  }
+
+  _resolveIconValue(value, fallback = "mdi:hammer-wrench") {
+    const raw = `${value || ""}`.trim();
+    if (!raw) return fallback || "mdi:hammer-wrench";
+    if (raw.includes(":")) return raw;
+    const slug = raw
+      .toLowerCase()
+      .replace(/[_\s]+/g, "-")
+      .replace(/[^a-z0-9-]+/g, "")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    const candidate = `mdi:${slug}`;
+    return MaintenanceTrackerManager.ICON_OPTIONS.includes(candidate) ? candidate : (fallback || candidate);
+  }
+
   _filteredIcons(query) {
-    const cleaned = (query || "").trim().toLowerCase();
+    const cleaned = this._normalizeIconQuery(query);
     const icons = MaintenanceTrackerManager.ICON_OPTIONS;
     if (!cleaned) return icons;
-    return icons.filter((icon) => icon.toLowerCase().includes(cleaned));
+    return icons.filter((icon) => {
+      const label = this._iconLabel(icon);
+      const slug = label.replace(/\s+/g, "-");
+      return label.includes(cleaned) || slug.includes(cleaned);
+    });
   }
 
   _groupedIcons(query) {
-    const cleaned = (query || "").trim().toLowerCase();
+    const cleaned = this._normalizeIconQuery(query);
     const groups = MaintenanceTrackerManager.ICON_GROUPS.map((group) => ({
       label: group.label,
-      icons: group.icons.filter((icon) => !cleaned || icon.toLowerCase().includes(cleaned)),
+      icons: group.icons.filter((icon) => {
+        if (!cleaned) return true;
+        const label = this._iconLabel(icon);
+        const slug = label.replace(/\s+/g, "-");
+        return label.includes(cleaned) || slug.includes(cleaned);
+      }),
     })).filter((group) => group.icons.length);
 
     if (groups.length || !cleaned) return groups;
@@ -360,7 +404,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     const payload = {
       title: `${data.get("title") || ""}`.trim(),
       slug: `${data.get("slug") || ""}`.trim() || this._slugify(`${data.get("title") || ""}`),
-      icon: `${data.get("icon") || ""}`.trim(),
+      icon: this._resolveIconValue(`${data.get("icon") || ""}`.trim(), this._dialog?.tracker?.icon),
       lifespan_days: Number(data.get("lifespan_days") || 0),
       last_done: `${data.get("last_done") || ""}`.trim(),
       notes: `${data.get("notes") || ""}`.trim(),
@@ -564,16 +608,15 @@ class MaintenanceTrackerManager extends HTMLElement {
             <div class="icon-picker-shell">
               <label>Icon</label>
               <div class="icon-picker-bar">
-              <div class="icon-picker-preview">
+                <div class="icon-picker-preview">
                   <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
                 </div>
-                <input name="icon" id="icon-search-input" value="${tracker.icon || ""}" placeholder="Search or type mdi:bed" />
-                <button type="button" class="action icon-picker-search" id="run-icon-search">Search</button>
+                <input name="icon" id="icon-search-input" value="${this._dialog.iconQuery || ""}" placeholder="Search icons" autocomplete="off" autocapitalize="off" spellcheck="false" />
                 <button type="button" class="action icon-picker-toggle" id="toggle-icon-picker">${this._dialog.iconPickerOpen ? "Hide icons" : "Browse icons"}</button>
               </div>
               ${this._dialog.iconPickerOpen ? `
                 <div class="icon-picker-panel">
-                  <div class="icon-picker-help">Pick from common icons or keep typing to filter.</div>
+                  <div class="icon-picker-help">Type to filter, then tap an icon.</div>
                   ${groupedIcons.length ? groupedIcons.map((group) => `
                     <div class="icon-group">
                       <div class="icon-group-label">${group.label}</div>
@@ -581,7 +624,7 @@ class MaintenanceTrackerManager extends HTMLElement {
                         ${group.icons.map((icon) => `
                           <button type="button" class="icon-tile ${icon === tracker.icon ? "icon-tile-active" : ""}" data-icon-choice="${icon}">
                             <ha-icon icon="${icon}"></ha-icon>
-                            <span>${icon.replace("mdi:", "")}</span>
+                            <span>${this._iconDisplayLabel(icon)}</span>
                           </button>
                         `).join("")}
                       </div>
@@ -598,6 +641,7 @@ class MaintenanceTrackerManager extends HTMLElement {
               <button type="button" class="action" data-close-dialog>Cancel</button>
               <button type="submit" class="action action-primary">${isEdit ? "Save" : "Create"}</button>
             </div>
+            <div class="dialog-bottom-spacer" aria-hidden="true"></div>
           </form>
         </div>
       </div>
@@ -913,6 +957,10 @@ class MaintenanceTrackerManager extends HTMLElement {
           margin-top: 14px;
           flex-wrap: wrap;
         }
+        .dialog-bottom-spacer {
+          height: 18px;
+          pointer-events: none;
+        }
         .action,
         .add-button,
         .icon-button {
@@ -1053,7 +1101,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         }
         .icon-picker-bar {
           display: grid;
-          grid-template-columns: auto 1fr auto auto;
+          grid-template-columns: auto 1fr auto;
           gap: 8px;
           align-items: center;
         }
@@ -1072,9 +1120,6 @@ class MaintenanceTrackerManager extends HTMLElement {
           --mdc-icon-size: 24px;
         }
         .icon-picker-toggle {
-          white-space: nowrap;
-        }
-        .icon-picker-search {
           white-space: nowrap;
         }
         .icon-picker-panel {
@@ -1244,40 +1289,45 @@ class MaintenanceTrackerManager extends HTMLElement {
     const previewIcon = this.shadowRoot.querySelector(".dialog-preview-center ha-icon");
     const iconBarPreview = this.shadowRoot.querySelector(".icon-picker-preview ha-icon");
     const toggleIconPicker = this.shadowRoot.getElementById("toggle-icon-picker");
-    const runIconSearch = this.shadowRoot.getElementById("run-icon-search");
+    const applyIconFilter = (query) => {
+      const normalizedQuery = this._normalizeIconQuery(query);
+      this.shadowRoot.querySelectorAll(".icon-group").forEach((group) => {
+        let visibleCount = 0;
+        group.querySelectorAll(".icon-tile").forEach((tile) => {
+          const icon = tile.dataset.iconChoice || "";
+          const label = this._iconLabel(icon);
+          const slug = label.replace(/\s+/g, "-");
+          const visible = !normalizedQuery || label.includes(normalizedQuery) || slug.includes(normalizedQuery);
+          tile.hidden = !visible;
+          if (visible) visibleCount += 1;
+        });
+        group.hidden = visibleCount === 0;
+      });
+      const emptyState = this.shadowRoot.querySelector(".icon-empty");
+      if (emptyState) {
+        const hasVisible = Array.from(this.shadowRoot.querySelectorAll(".icon-tile")).some((tile) => !tile.hidden);
+        emptyState.hidden = hasVisible;
+      }
+    };
     if (titleInput && previewTitle) {
       titleInput.addEventListener("input", () => {
         previewTitle.textContent = titleInput.value.trim() || "Tracker title";
       });
     }
     if (iconInput && previewIcon) {
-      iconInput.addEventListener("input", () => {
-        const icon = iconInput.value.trim() || "mdi:hammer-wrench";
-        previewIcon.setAttribute("icon", icon);
-        if (iconBarPreview) iconBarPreview.setAttribute("icon", icon);
-        if (this._dialog) {
-          this._dialog.tracker.icon = icon;
-          this._dialog.iconQuery = iconInput.value.trim();
-        }
+      iconInput.addEventListener("focus", () => {
+        if (!this._dialog || this._dialog.iconPickerOpen) return;
+        this._dialog.iconPickerOpen = true;
+        this._render();
       });
-      iconInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          event.stopPropagation();
-          if (this._dialog) {
-            this._dialog.iconQuery = iconInput.value.trim();
-            this._dialog.iconPickerOpen = true;
-            this._render();
-          }
+      iconInput.addEventListener("input", () => {
+        if (this._dialog) {
+          this._dialog.iconQuery = iconInput.value.trim();
+          this._dialog.iconPickerOpen = true;
         }
+        applyIconFilter(iconInput.value);
       });
     }
-    runIconSearch?.addEventListener("click", () => {
-      if (!iconInput || !this._dialog) return;
-      this._dialog.iconQuery = iconInput.value.trim();
-      this._dialog.iconPickerOpen = true;
-      this._render();
-    });
     toggleIconPicker?.addEventListener("click", () => {
       if (!this._dialog) return;
       this._dialog.iconPickerOpen = !this._dialog.iconPickerOpen;
@@ -1287,9 +1337,8 @@ class MaintenanceTrackerManager extends HTMLElement {
       button.addEventListener("click", () => {
         const icon = button.dataset.iconChoice;
         if (!iconInput || !this._dialog) return;
-        iconInput.value = icon;
         this._dialog.tracker.icon = icon;
-        this._dialog.iconQuery = icon;
+        this._dialog.iconQuery = this._iconLabel(icon);
         previewIcon?.setAttribute("icon", icon);
         iconBarPreview?.setAttribute("icon", icon);
         this._render();
