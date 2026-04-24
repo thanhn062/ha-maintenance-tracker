@@ -1146,7 +1146,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           flex-wrap: unset;
         }
         .dialog-bottom-spacer {
-          height: 120px;
+          height: 200px;
           pointer-events: none;
         }
         .action,
@@ -1588,10 +1588,16 @@ class MaintenanceTrackerManager extends HTMLElement {
             if (!this._dialog) return;
             this._dialog.allIconsLoading = false;
             this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
+            requestAnimationFrame(() => {
+              this.shadowRoot?.querySelector('input[name="icon"]')?.blur();
+            });
           });
           return;
         }
         this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
+        requestAnimationFrame(() => {
+          this.shadowRoot?.querySelector('input[name="icon"]')?.blur();
+        });
       });
     }
     showCommonIcons?.addEventListener("click", () => {
