@@ -1383,14 +1383,14 @@ class MaintenanceTrackerManager extends HTMLElement {
           -webkit-overflow-scrolling: touch;
         }
         .dialog {
-          width: min(460px, 100%);
+          width: min(540px, 100%);
           background: #20252c;
           color: var(--primary-text-color);
           border-radius: 22px;
           padding: 16px;
           box-shadow: 0 18px 42px rgba(0,0,0,0.35);
           margin: auto 0;
-          max-height: calc(100dvh - 56px);
+          max-height: calc(100dvh - 44px);
           overflow-y: auto;
         }
         .dialog-header {
