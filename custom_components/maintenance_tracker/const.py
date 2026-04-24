@@ -24,3 +24,4 @@ DEFAULT_NOTIFY_HOUR = 7
 
 WS_TYPE_LIST = f"{DOMAIN}/list_trackers"
 WS_TYPE_GET = f"{DOMAIN}/get_tracker"
+WS_TYPE_UPDATE_SETTINGS = f"{DOMAIN}/update_settings"

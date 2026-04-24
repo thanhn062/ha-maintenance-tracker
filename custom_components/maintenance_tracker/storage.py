@@ -14,6 +14,8 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    DEFAULT_NOTIFY_HOUR,
+    DEFAULT_NOTIFY_ON_DUE,
     DEFAULT_DUE_SOON_THRESHOLD,
     EVENT_TRACKER_DUE,
     STORAGE_KEY,
@@ -23,6 +25,13 @@ from .const import (
 DEFAULT_ICON = "mdi:hammer-wrench"
 SLUG_REGEX = re.compile(r"^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$")
 LOGGER = logging.getLogger(__name__)
+
+
+def _default_settings() -> dict[str, Any]:
+    return {
+        "notify_on_due": DEFAULT_NOTIFY_ON_DUE,
+        "notify_hour": DEFAULT_NOTIFY_HOUR,
+    }
 
 
 def _utc_now_iso() -> str:
@@ -111,13 +120,21 @@ class TrackerStore:
         self._store: Store[dict[str, Any]] = Store(
             self.hass, STORAGE_VERSION, STORAGE_KEY
         )
-        self._data: dict[str, Any] = {"version": 1, "trackers": []}
+        self._data: dict[str, Any] = {
+            "version": 1,
+            "settings": _default_settings(),
+            "trackers": [],
+        }
 
     async def async_load(self) -> None:
         """Load registry from storage."""
         data = await self._store.async_load()
         if not data:
-            self._data = {"version": 1, "trackers": []}
+            self._data = {
+                "version": 1,
+                "settings": _default_settings(),
+                "trackers": [],
+            }
             return
         trackers: list[dict[str, Any]] = []
         seen_ids: set[str] = set()
@@ -131,7 +148,11 @@ class TrackerStore:
             trackers.append(normalized)
             seen_ids.add(normalized["id"])
             seen_slugs.add(normalized["slug"])
-        self._data = {"version": int(data.get("version", 1)), "trackers": trackers}
+        self._data = {
+            "version": int(data.get("version", 1)),
+            "settings": self._normalize_settings(data.get("settings")),
+            "trackers": trackers,
+        }
 
     async def async_reload(self) -> None:
         """Reload from storage."""
@@ -147,6 +168,18 @@ class TrackerStore:
             _derive_tracker(item, self.due_soon_threshold)
             for item in sorted(self._data["trackers"], key=lambda tracker: tracker["title"].lower())
         ]
+
+    def get_settings(self) -> dict[str, Any]:
+        """Return integration-owned settings."""
+        return dict(self._data.get("settings", _default_settings()))
+
+    async def async_update_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Update integration-owned settings."""
+        current = self.get_settings()
+        current.update(payload)
+        self._data["settings"] = self._normalize_settings(current)
+        await self.async_save()
+        return self.get_settings()
 
     def get_tracker(self, tracker_id: str) -> dict[str, Any]:
         """Return one tracker with derived values."""
@@ -199,10 +232,10 @@ class TrackerStore:
             {"last_done": _validate_last_done(target_date)},
         )
 
-    async def async_process_due_notifications(
-        self, *, enabled: bool
-    ) -> list[dict[str, Any]]:
+    async def async_process_due_notifications(self) -> list[dict[str, Any]]:
         """Fire due notifications once per due cycle."""
+        settings = self.get_settings()
+        enabled = bool(settings.get("notify_on_due", DEFAULT_NOTIFY_ON_DUE))
         if not enabled:
             return []
 
@@ -260,6 +293,17 @@ class TrackerStore:
             if tracker["id"] == normalized or tracker["slug"] == normalized:
                 return tracker
         raise ValueError(f"Tracker '{tracker_id}' was not found.")
+
+    def _normalize_settings(self, payload: Any) -> dict[str, Any]:
+        data = dict(payload or {})
+        notify_on_due = bool(data.get("notify_on_due", DEFAULT_NOTIFY_ON_DUE))
+        notify_hour = int(data.get("notify_hour", DEFAULT_NOTIFY_HOUR))
+        if notify_hour < 0 or notify_hour > 23:
+            raise ValueError("notify_hour must be between 0 and 23.")
+        return {
+            "notify_on_due": notify_on_due,
+            "notify_hour": notify_hour,
+        }
 
     def _existing_ids(self, excluding: str | None = None) -> set[str]:
         return {

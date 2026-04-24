@@ -18,11 +18,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_DUE_SOON_THRESHOLD,
-    CONF_NOTIFY_HOUR,
-    CONF_NOTIFY_ON_DUE,
     DEFAULT_DUE_SOON_THRESHOLD,
-    DEFAULT_NOTIFY_HOUR,
-    DEFAULT_NOTIFY_ON_DUE,
     DOMAIN,
     EVENT_TRACKERS_UPDATED,
     SERVICE_CREATE_TRACKER,
@@ -221,14 +217,9 @@ async def _async_process_due_notifications(hass: HomeAssistant) -> None:
     store = hass.data.get(DOMAIN, {}).get(DATA_STORE)
     if store is None:
         return
-    entry = next(iter(hass.config_entries.async_entries(DOMAIN)), None)
-    if entry is None:
-        return
-    enabled = bool(entry.options.get(CONF_NOTIFY_ON_DUE, DEFAULT_NOTIFY_ON_DUE))
-    notify_hour = int(entry.options.get(CONF_NOTIFY_HOUR, DEFAULT_NOTIFY_HOUR))
+    settings = store.get_settings()
+    notify_hour = int(settings.get("notify_hour", 7))
     current_hour = dt_util.as_local(dt_util.now()).hour
     if current_hour != notify_hour:
         return
-    await store.async_process_due_notifications(
-        enabled=enabled,
-    )
+    await store.async_process_due_notifications()

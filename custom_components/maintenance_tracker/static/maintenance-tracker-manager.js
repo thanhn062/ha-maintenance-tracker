@@ -1900,7 +1900,12 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     super();
     this._config = {};
     this._trackers = [];
+    this._settings = {
+      notify_on_due: false,
+      notify_hour: 7,
+    };
     this._loading = false;
+    this._settingsSaving = false;
   }
 
   set hass(hass) {
@@ -1936,10 +1941,36 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     try {
       const result = await this._hass.callWS({ type: "maintenance_tracker/list_trackers" });
       this._trackers = (result.trackers || []).sort((left, right) => (left.title || "").localeCompare(right.title || ""));
+      this._settings = {
+        notify_on_due: result.settings?.notify_on_due === true,
+        notify_hour: Number(result.settings?.notify_hour ?? 7),
+      };
     } catch (_err) {
       this._trackers = [];
     } finally {
       this._loading = false;
+      this._render();
+    }
+  }
+
+  async _updateSettings(patch) {
+    if (!this._hass) return;
+    this._settings = { ...this._settings, ...patch };
+    this._settingsSaving = true;
+    this._render();
+    try {
+      const result = await this._hass.callWS({
+        type: "maintenance_tracker/update_settings",
+        ...patch,
+      });
+      this._settings = {
+        notify_on_due: result.settings?.notify_on_due === true,
+        notify_hour: Number(result.settings?.notify_hour ?? 7),
+      };
+    } catch (_err) {
+      // Keep local state optimistic; reload later will reconcile if needed.
+    } finally {
+      this._settingsSaving = false;
       this._render();
     }
   }
@@ -2032,6 +2063,20 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
           </label>
         </div>
         <div class="picker">
+          <div class="picker-title">Notifications</div>
+          <div class="option-grid">
+            <label class="picker-item">
+              <input id="notify-on-due" type="checkbox" ${this._settings?.notify_on_due === true ? "checked" : ""} />
+              <span>Send due notifications</span>
+            </label>
+          </div>
+          <label>
+            Notify hour
+            <input id="notify-hour" type="number" min="0" max="23" value="${Number(this._settings?.notify_hour ?? 7)}" />
+          </label>
+          <div class="help">${this._settingsSaving ? "Saving notification settings..." : "Backend-owned setting shared across all tracker cards."}</div>
+        </div>
+        <div class="picker">
           <div class="picker-title">Compact display options</div>
           <div class="option-grid">
             <label class="picker-item">
@@ -2090,6 +2135,12 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     });
     this.shadowRoot.getElementById("visibility-overdue-days").addEventListener("change", (event) => {
       this._emitConfig({ visibility_overdue_days: Number(event.target.value || 0) });
+    });
+    this.shadowRoot.getElementById("notify-on-due").addEventListener("change", (event) => {
+      this._updateSettings({ notify_on_due: event.target.checked });
+    });
+    this.shadowRoot.getElementById("notify-hour").addEventListener("change", (event) => {
+      this._updateSettings({ notify_hour: Number(event.target.value || 0) });
     });
     this.shadowRoot.getElementById("compact-show-names").addEventListener("change", (event) => {
       this._emitConfig({ compact_show_names: event.target.checked });

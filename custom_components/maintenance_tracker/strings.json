@@ -17,18 +17,6 @@
       "single_instance_allowed": "Only one Maintenance Tracker instance is supported."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Maintenance Tracker options",
-        "description": "Configure whether due tasks should use the Home Assistant notify pipeline.",
-        "data": {
-          "notify_on_due": "Send due notifications",
-          "notify_hour": "Notify hour (0-23)"
-        }
-      }
-    }
-  },
   "services": {
     "create_tracker": {
       "name": "Create tracker",
