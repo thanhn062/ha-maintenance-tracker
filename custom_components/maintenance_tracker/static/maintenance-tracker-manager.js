@@ -869,6 +869,15 @@ class MaintenanceTrackerManager extends HTMLElement {
       : `<div class="empty-state">No trackers yet. Add one to get started.</div>`;
     const isCompact = this._config.mode === "compact";
     const isBadge = this._config.mode === "badge";
+    const isEditMode = Boolean(this._hass?.editMode);
+    const hideForVisibility = (isCompact || isBadge) && !displayTrackers.length && !isEditMode;
+    this.style.display = hideForVisibility ? "none" : "block";
+
+    if (hideForVisibility) {
+      this.shadowRoot.innerHTML = `<style>:host{display:none;}</style>`;
+      return;
+    }
+
     const compactMarkup = displayTrackers.length
       ? displayTrackers.map((tracker) => this._renderCompactTracker(tracker)).join("")
       : this._renderVisibilityEmptyState();
