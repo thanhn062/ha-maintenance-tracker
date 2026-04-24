@@ -800,6 +800,21 @@ class MaintenanceTrackerManager extends HTMLElement {
     `;
   }
 
+  _renderVisibilityEmptyState(mode) {
+    const modeLabel = mode === "badge" ? "badge" : "compact";
+    return `
+      <div class="empty-state empty-state-visibility empty-state-${modeLabel}">
+        <div class="empty-state-icon">
+          <ha-icon icon="mdi:calendar-check-outline"></ha-icon>
+        </div>
+        <div class="empty-state-copy">
+          <div class="empty-state-title">Maintenance Task</div>
+          <div class="empty-state-detail">No tasks are due in the current visibility window.</div>
+        </div>
+      </div>
+    `;
+  }
+
   _renderDialog() {
     if (!this._dialog) return "";
     const tracker = this._dialog.tracker;
@@ -923,10 +938,10 @@ class MaintenanceTrackerManager extends HTMLElement {
 
     const compactMarkup = displayTrackers.length
       ? displayTrackers.map((tracker) => this._renderCompactTracker(tracker)).join("")
-      : `<div class="empty-state">No tasks are due in the current visibility window.</div>`;
+      : this._renderVisibilityEmptyState("compact");
     const badgeMarkup = displayTrackers.length
       ? displayTrackers.map((tracker) => this._renderBadgeTracker(tracker)).join("")
-      : `<div class="empty-state">No tasks are due in the current visibility window.</div>`;
+      : this._renderVisibilityEmptyState("badge");
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -1259,6 +1274,50 @@ class MaintenanceTrackerManager extends HTMLElement {
           border-radius: 16px;
           padding: 14px;
           background: rgba(127,127,127,0.10);
+        }
+        .empty-state-visibility {
+          border: 1px dashed rgba(127,127,127,0.22);
+          min-height: 74px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: var(--primary-text-color);
+          background: color-mix(in srgb, var(--card-background-color, #1c1f24) 72%, transparent);
+        }
+        .empty-state-compact,
+        .empty-state-badge {
+          grid-column: 1 / -1;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .empty-state-icon {
+          width: 34px;
+          height: 34px;
+          flex: 0 0 auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          background: rgba(42,157,143,0.14);
+          color: #2a9d8f;
+        }
+        .empty-state-icon ha-icon {
+          --mdc-icon-size: 18px;
+        }
+        .empty-state-copy {
+          min-width: 0;
+          display: grid;
+          gap: 3px;
+        }
+        .empty-state-title {
+          font-size: 0.9rem;
+          font-weight: 600;
+          line-height: 1.2;
+        }
+        .empty-state-detail {
+          font-size: 0.78rem;
+          line-height: 1.3;
+          color: var(--secondary-text-color);
         }
         .error {
           margin-bottom: 12px;
