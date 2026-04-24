@@ -36,6 +36,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._allIconsPromise = null;
     this._compactResetArmedId = null;
     this._managerResetArmedId = null;
+    this._badgeResetArmedId = null;
     this._eventUnsubscribe = null;
     this._subscribedHass = null;
     this._preview = false;
@@ -686,6 +687,10 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._managerResetArmedId = null;
   }
 
+  _clearBadgeResetArm() {
+    this._badgeResetArmedId = null;
+  }
+
   async _handleCompactTrackerTap(tracker) {
     if (!tracker) return;
     if (this._compactResetArmedId === tracker.id) {
@@ -793,14 +798,23 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   _renderBadgeTracker(tracker) {
     const urgency = this._urgencyInfo(tracker);
+    const isBadgeResetArmed = this._badgeResetArmedId === tracker.id;
+    const badgeIcon = isBadgeResetArmed ? "mdi:refresh" : (tracker.icon || "mdi:hammer-wrench");
+    const badgeTitle = isBadgeResetArmed ? "Confirm" : tracker.title;
+    const badgeSummary = isBadgeResetArmed
+      ? "Tap again to reset"
+      : this._summaryText(tracker, { natural: true });
+    const badgeStyle = isBadgeResetArmed
+      ? "--badge-accent:#ffffff;--badge-accent-bg:#d9485f;--badge-border:#d9485f;--badge-bg:#d9485f;--badge-text:#ffffff;--badge-summary:#ffffff;"
+      : `--badge-accent:${urgency.color};--badge-accent-bg:${urgency.accent};`;
     return `
-      <button class="badge-tile" style="--badge-accent:${urgency.color};--badge-accent-bg:${urgency.accent};" title="${tracker.title}: ${this._summaryText(tracker, { natural: true })}" data-badge-id="${tracker.id}">
+      <button class="badge-tile ${isBadgeResetArmed ? "badge-tile-armed" : ""}" style="${badgeStyle}" title="${isBadgeResetArmed ? `Tap again to reset ${tracker.title}` : `${tracker.title}: ${this._summaryText(tracker, { natural: true })}`}" data-badge-id="${tracker.id}">
         <div class="badge-icon">
-          <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
+          <ha-icon icon="${badgeIcon}"></ha-icon>
         </div>
         <div class="badge-copy">
-          <div class="badge-title">${tracker.title}</div>
-          <div class="badge-summary">${this._summaryText(tracker, { natural: true })}</div>
+          <div class="badge-title">${badgeTitle}</div>
+          <div class="badge-summary">${badgeSummary}</div>
         </div>
       </button>
     `;
@@ -991,11 +1005,11 @@ class MaintenanceTrackerManager extends HTMLElement {
         }
         .badge-tile {
           appearance: none;
-          border: 1px solid var(--divider-color);
+          border: 1px solid var(--badge-border, var(--divider-color));
           border-radius: 999px;
           padding: 8px 14px 8px 9px;
-          background: var(--ha-card-background, var(--card-background-color));
-          color: var(--primary-text-color);
+          background: var(--badge-bg, var(--ha-card-background, var(--card-background-color)));
+          color: var(--badge-text, var(--primary-text-color));
           display: inline-flex;
           align-items: center;
           gap: 9px;
@@ -1030,8 +1044,12 @@ class MaintenanceTrackerManager extends HTMLElement {
         .badge-summary {
           font-size: 0.76rem;
           font-weight: 500;
-          color: var(--secondary-text-color);
+          color: var(--badge-summary, var(--secondary-text-color));
           opacity: 1;
+        }
+        .badge-tile-armed .badge-title,
+        .badge-tile-armed .badge-summary {
+          color: #ffffff;
         }
         .compact-tile {
           appearance: none;
@@ -1616,6 +1634,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this.shadowRoot.getElementById("add-tracker")?.addEventListener("click", () => {
       this._clearCompactResetArm();
       this._clearManagerResetArm();
+      this._clearBadgeResetArm();
       this._openDialog("create");
     });
     this.shadowRoot.addEventListener("click", (event) => {
@@ -1634,6 +1653,13 @@ class MaintenanceTrackerManager extends HTMLElement {
           changed = true;
         }
       }
+      if (this._badgeResetArmedId) {
+        const armedBadge = event.target.closest?.(`[data-badge-id="${this._badgeResetArmedId}"]`);
+        if (!armedBadge) {
+          this._clearBadgeResetArm();
+          changed = true;
+        }
+      }
       if (changed) {
         requestAnimationFrame(() => this._render());
       }
@@ -1641,6 +1667,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-action]").forEach((button) => {
       button.addEventListener("click", () => {
         this._clearCompactResetArm();
+        this._clearBadgeResetArm();
         const tracker = this._trackers.find((item) => item.id === button.dataset.id);
         if (!tracker) return;
         const action = button.dataset.action;
@@ -1659,15 +1686,33 @@ class MaintenanceTrackerManager extends HTMLElement {
     });
     this.shadowRoot.querySelectorAll("[data-compact-id]").forEach((button) => {
       button.addEventListener("click", () => {
+        this._clearManagerResetArm();
+        this._clearBadgeResetArm();
         const tracker = this._trackers.find((item) => item.id === button.dataset.compactId);
         if (!tracker) return;
         this._handleCompactTrackerTap(tracker);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-badge-id]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        this._clearCompactResetArm();
+        this._clearManagerResetArm();
+        const tracker = this._trackers.find((item) => item.id === button.dataset.badgeId);
+        if (!tracker) return;
+        if (this._badgeResetArmedId === tracker.id) {
+          this._badgeResetArmedId = null;
+          await this._resetTracker(tracker);
+          return;
+        }
+        this._badgeResetArmedId = tracker.id;
+        this._render();
       });
     });
     this.shadowRoot.querySelectorAll("[data-close-dialog]").forEach((button) => {
       button.addEventListener("click", () => {
         this._clearCompactResetArm();
         this._clearManagerResetArm();
+        this._clearBadgeResetArm();
         this._closeDialog();
       });
     });
