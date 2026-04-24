@@ -732,7 +732,7 @@ class MaintenanceTrackerManager extends HTMLElement {
                 <input name="icon" id="icon-search-input" value="${this._dialog.iconQuery || ""}" placeholder="Search icons" autocomplete="off" autocapitalize="off" spellcheck="false" />
                 <div class="icon-picker-actions">
                   <button type="button" class="action ${iconPickerMode === "common" ? "action-primary" : ""}" id="show-common-icons">Common icons</button>
-                  <button type="button" class="action ${iconPickerMode === "all" ? "action-primary" : ""}" id="show-all-icons">All MDI</button>
+                  <button type="button" class="action ${iconPickerMode === "all" ? "action-primary" : ""}" id="show-all-icons">All Icons</button>
                 </div>
               </div>
               ${this._dialog.iconPickerOpen ? `
@@ -1488,6 +1488,24 @@ class MaintenanceTrackerManager extends HTMLElement {
       });
     }
     if (iconInput && previewIcon) {
+      iconInput.addEventListener("focus", () => {
+        if (!this._dialog) return;
+        const selectionStart = iconInput.selectionStart;
+        const selectionEnd = iconInput.selectionEnd;
+        this._dialog.iconPickerOpen = true;
+        this._dialog.iconPickerMode = "all";
+        if (!this._allIconOptions && !this._dialog.allIconsLoading) {
+          this._dialog.allIconsLoading = true;
+          this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
+          void this._ensureAllIconsLoaded().then(() => {
+            if (!this._dialog) return;
+            this._dialog.allIconsLoading = false;
+            this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
+          });
+          return;
+        }
+        this._render();
+      });
       iconInput.addEventListener("input", () => {
         if (!this._dialog) return;
         const selectionStart = iconInput.selectionStart;
