@@ -29,6 +29,7 @@ from . import websocket_api
 
 DATA_STORE = "store"
 DATA_SERVICES_REGISTERED = "services_registered"
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 CREATE_SCHEMA = vol.Schema(
     {
