@@ -37,6 +37,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._compactResetArmedId = null;
     this._eventUnsubscribe = null;
     this._subscribedHass = null;
+    this._preview = false;
   }
 
   static get ICON_OPTIONS() {
@@ -216,6 +217,15 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   getCardSize() {
     return Math.max(3, Math.ceil((this._trackers?.length || 1) * 1.5));
+  }
+
+  get preview() {
+    return this._preview;
+  }
+
+  set preview(value) {
+    this._preview = value === true;
+    this._render();
   }
 
   async _callWS(type, payload = {}) {
@@ -903,7 +913,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       : `<div class="empty-state">No trackers yet. Add one to get started.</div>`;
     const isCompact = this._config.mode === "compact";
     const isBadge = this._config.mode === "badge";
-    const hideForVisibility = (isCompact || isBadge) && !displayTrackers.length;
+    const hideForVisibility = (isCompact || isBadge) && !displayTrackers.length && this._preview !== true;
     this.style.display = hideForVisibility ? "none" : "block";
 
     if (hideForVisibility) {
@@ -913,10 +923,10 @@ class MaintenanceTrackerManager extends HTMLElement {
 
     const compactMarkup = displayTrackers.length
       ? displayTrackers.map((tracker) => this._renderCompactTracker(tracker)).join("")
-      : "";
+      : `<div class="empty-state">No tasks are due in the current visibility window.</div>`;
     const badgeMarkup = displayTrackers.length
       ? displayTrackers.map((tracker) => this._renderBadgeTracker(tracker)).join("")
-      : "";
+      : `<div class="empty-state">No tasks are due in the current visibility window.</div>`;
 
     this.shadowRoot.innerHTML = `
       <style>
