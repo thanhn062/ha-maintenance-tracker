@@ -478,7 +478,9 @@ class MaintenanceTrackerManager extends HTMLElement {
             <circle class="dial-progress" cx="30" cy="30" r="24" style="stroke:${urgency.color};stroke-dasharray:${circumference};stroke-dashoffset:${dashOffset};"></circle>
           </svg>
           <div class="compact-dial-center">
-            <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
+            <div class="compact-dial-center-fill">
+              <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
+            </div>
           </div>
         </div>
         <div class="compact-meta">
@@ -715,15 +717,20 @@ class MaintenanceTrackerManager extends HTMLElement {
           border-radius: 999px;
         }
         .compact-dial-wrap-solid {
-          background: rgba(18, 22, 28, 0.82);
+          --compact-dial-track-bg: rgba(18, 22, 28, 0.36);
+          --compact-dial-center-bg: rgba(18, 22, 28, 0.88);
         }
         .compact-dial-wrap-transparent {
-          background: transparent;
+          --compact-dial-track-bg: transparent;
+          --compact-dial-center-bg: transparent;
         }
         .compact-dial {
           width: 60px;
           height: 60px;
           transform: rotate(-90deg);
+        }
+        .compact-dial .dial-bg {
+          stroke: var(--compact-dial-track-bg, rgba(18, 22, 28, 0.36));
         }
         .compact-dial-center {
           position: absolute;
@@ -731,9 +738,18 @@ class MaintenanceTrackerManager extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
+        }
+        .compact-dial-center-fill {
+          width: 36px;
+          height: 36px;
+          border-radius: 999px;
+          background: var(--compact-dial-center-bg, rgba(18, 22, 28, 0.88));
+          display: flex;
+          align-items: center;
+          justify-content: center;
           color: var(--tracker-color);
         }
-        .compact-dial-center ha-icon {
+        .compact-dial-center-fill ha-icon {
           --mdc-icon-size: 22px;
         }
         .compact-meta {
@@ -749,7 +765,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         }
         .compact-subtitle {
           font-size: 0.68rem;
-          color: var(--secondary-text-color);
+          color: var(--primary-text-color);
         }
         .compact-summary {
           font-size: 0.66rem;
@@ -1142,7 +1158,11 @@ class MaintenanceTrackerManager extends HTMLElement {
             width: 54px;
             height: 54px;
           }
-          .compact-dial-center ha-icon {
+          .compact-dial-center-fill {
+            width: 32px;
+            height: 32px;
+          }
+          .compact-dial-center-fill ha-icon {
             --mdc-icon-size: 20px;
           }
           .compact-title {
@@ -1413,7 +1433,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
             </label>
             <label class="picker-item">
               <input id="compact-show-dial-background" type="checkbox" ${this._config?.compact_show_dial_background !== false ? "checked" : ""} />
-              <span>Show dial background</span>
+              <span>Show dial surfaces</span>
             </label>
           </div>
         </div>
