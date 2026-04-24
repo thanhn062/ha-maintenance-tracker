@@ -40,6 +40,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._eventUnsubscribe = null;
     this._subscribedHass = null;
     this._preview = false;
+    this._boundDocumentPointerHandler = this._handleDocumentPointer.bind(this);
   }
 
   static get ICON_OPTIONS() {
@@ -210,10 +211,12 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   connectedCallback() {
     this._ensureEventSubscription();
+    document.addEventListener("pointerdown", this._boundDocumentPointerHandler, true);
     this._render();
   }
 
   disconnectedCallback() {
+    document.removeEventListener("pointerdown", this._boundDocumentPointerHandler, true);
     this._teardownEventSubscription();
   }
 
@@ -689,6 +692,24 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   _clearBadgeResetArm() {
     this._badgeResetArmedId = null;
+  }
+
+  _handleDocumentPointer(event) {
+    if (
+      !this._compactResetArmedId &&
+      !this._managerResetArmedId &&
+      !this._badgeResetArmedId
+    ) {
+      return;
+    }
+    const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+    if (path.includes(this)) {
+      return;
+    }
+    this._clearCompactResetArm();
+    this._clearManagerResetArm();
+    this._clearBadgeResetArm();
+    this._render();
   }
 
   async _handleCompactTrackerTap(tracker) {
