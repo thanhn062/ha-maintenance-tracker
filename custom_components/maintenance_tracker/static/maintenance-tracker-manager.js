@@ -779,7 +779,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           ${showNames ? `<div class="compact-title">${tracker.title}</div>` : ""}
           ${showAgeLifespan ? `<div class="compact-subtitle">${ageDays}/${lifespanDays}</div>` : ""}
           ${showSummary ? `<div class="compact-summary">${this._summaryText(tracker, { natural: true })}</div>` : ""}
-          ${showUrgency ? `<div class="compact-urgency" style="color:${urgency.color};">${urgency.label}</div>` : ""}
+          ${showUrgency ? `<div class="compact-urgency">${urgency.label}</div>` : ""}
         </div>
       </button>
     `;
@@ -1917,7 +1917,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
           Display mode
           <select id="mode">
             <option value="manager" ${mode === "manager" ? "selected" : ""}>Manager</option>
-            <option value="compact" ${mode === "compact" ? "selected" : ""}>Compact row</option>
+            <option value="compact" ${mode === "compact" ? "selected" : ""}>Compact</option>
             <option value="badge" ${mode === "badge" ? "selected" : ""}>Badge</option>
           </select>
         </label>
