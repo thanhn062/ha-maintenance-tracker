@@ -21,10 +21,9 @@
     "step": {
       "init": {
         "title": "Maintenance Tracker options",
-        "description": "Configure due notification behavior.",
+        "description": "Configure whether due tasks should use the Home Assistant notify pipeline.",
         "data": {
-          "notify_on_due": "Send due notifications",
-          "notify_service": "Notify service (optional, for example notify.mobile_app_iphone)"
+          "notify_on_due": "Send due notifications"
         }
       }
     }

@@ -13,10 +13,8 @@ from homeassistant.data_entry_flow import FlowResult
 from .const import (
     CONF_DUE_SOON_THRESHOLD,
     CONF_NOTIFY_ON_DUE,
-    CONF_NOTIFY_SERVICE,
     DEFAULT_DUE_SOON_THRESHOLD,
     DEFAULT_NOTIFY_ON_DUE,
-    DEFAULT_NOTIFY_SERVICE,
     DOMAIN,
 )
 
@@ -69,9 +67,6 @@ class MaintenanceTrackerOptionsFlow(config_entries.OptionsFlowWithReload):
     ) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
-            user_input[CONF_NOTIFY_SERVICE] = str(
-                user_input.get(CONF_NOTIFY_SERVICE, "") or ""
-            ).strip()
             return self.async_create_entry(data=user_input)
 
         options_schema = vol.Schema(
@@ -82,12 +77,6 @@ class MaintenanceTrackerOptionsFlow(config_entries.OptionsFlowWithReload):
                         CONF_NOTIFY_ON_DUE, DEFAULT_NOTIFY_ON_DUE
                     ),
                 ): bool,
-                vol.Required(
-                    CONF_NOTIFY_SERVICE,
-                    default=self.config_entry.options.get(
-                        CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE
-                    ),
-                ): str,
             }
         )
 

@@ -18,10 +18,8 @@ from homeassistant.helpers.typing import ConfigType
 from .const import (
     CONF_DUE_SOON_THRESHOLD,
     CONF_NOTIFY_ON_DUE,
-    CONF_NOTIFY_SERVICE,
     DEFAULT_DUE_SOON_THRESHOLD,
     DEFAULT_NOTIFY_ON_DUE,
-    DEFAULT_NOTIFY_SERVICE,
     DOMAIN,
     EVENT_TRACKERS_UPDATED,
     SERVICE_CREATE_TRACKER,
@@ -225,10 +223,6 @@ async def _async_process_due_notifications(hass: HomeAssistant) -> None:
     if entry is None:
         return
     enabled = bool(entry.options.get(CONF_NOTIFY_ON_DUE, DEFAULT_NOTIFY_ON_DUE))
-    notify_service = str(
-        entry.options.get(CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE) or ""
-    ).strip()
     await store.async_process_due_notifications(
         enabled=enabled,
-        notify_service=notify_service or None,
     )

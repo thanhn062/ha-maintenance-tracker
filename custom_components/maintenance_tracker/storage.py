@@ -200,7 +200,7 @@ class TrackerStore:
         )
 
     async def async_process_due_notifications(
-        self, *, enabled: bool, notify_service: str | None = None
+        self, *, enabled: bool
     ) -> list[dict[str, Any]]:
         """Fire due notifications once per due cycle."""
         if not enabled:
@@ -232,24 +232,16 @@ class TrackerStore:
                 "status": tracker["status"],
             }
             self.hass.bus.async_fire(EVENT_TRACKER_DUE, payload)
-            if notify_service:
-                await self._async_send_due_notification(tracker, notify_service)
+            await self._async_send_due_notification(tracker)
 
         return triggered
 
-    async def _async_send_due_notification(
-        self, tracker: dict[str, Any], notify_service: str
-    ) -> None:
-        """Send an optional Home Assistant notify service call."""
-        domain, service = (
-            notify_service.split(".", 1)
-            if "." in notify_service
-            else ("notify", notify_service)
-        )
+    async def _async_send_due_notification(self, tracker: dict[str, Any]) -> None:
+        """Send a Home Assistant notification using the shared notify pipeline."""
         try:
             await self.hass.services.async_call(
-                domain,
-                service,
+                "notify",
+                "notify",
                 {
                     "title": "Maintenance Task Due",
                     "message": f"{tracker['title']} is due today.",
@@ -260,7 +252,7 @@ class TrackerStore:
                 blocking=True,
             )
         except Exception:
-            LOGGER.exception("Failed to send due notification via %s", notify_service)
+            LOGGER.exception("Failed to send due notification via notify.notify")
 
     def _find_tracker(self, tracker_id: str) -> dict[str, Any]:
         normalized = tracker_id.strip().lower()

@@ -11,7 +11,6 @@ EVENT_TRACKER_DUE = f"{DOMAIN}_due"
 
 CONF_DUE_SOON_THRESHOLD = "due_soon_threshold"
 CONF_NOTIFY_ON_DUE = "notify_on_due"
-CONF_NOTIFY_SERVICE = "notify_service"
 
 SERVICE_CREATE_TRACKER = "create_tracker"
 SERVICE_UPDATE_TRACKER = "update_tracker"
@@ -20,7 +19,6 @@ SERVICE_RESET = "reset"
 SERVICE_RELOAD = "reload"
 
 DEFAULT_NOTIFY_ON_DUE = False
-DEFAULT_NOTIFY_SERVICE = ""
 
 WS_TYPE_LIST = f"{DOMAIN}/list_trackers"
 WS_TYPE_GET = f"{DOMAIN}/get_tracker"
