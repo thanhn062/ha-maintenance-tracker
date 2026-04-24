@@ -704,7 +704,8 @@ class MaintenanceTrackerManager extends HTMLElement {
     const showDialBackground = this._config.compact_show_dial_background !== false;
     const isResetArmed = this._compactResetArmedId === tracker.id;
     const compactIcon = isResetArmed ? "mdi:refresh" : (tracker.icon || "mdi:hammer-wrench");
-    const compactIconColor = isResetArmed ? "#d9485f" : urgency.color;
+    const compactIconColor = isResetArmed ? "#ffffff" : urgency.color;
+    const compactCenterFillBg = isResetArmed ? "#d9485f" : null;
     return `
       <button class="compact-tile ${showTileBackground ? "compact-tile-surface" : "compact-tile-plain"}" title="${isResetArmed ? `Tap again to reset ${tracker.title}` : `${tracker.title}: ${tracker.days_since_done} day${tracker.days_since_done === 1 ? "" : "s"} passed, ${urgency.label}`}" data-compact-id="${tracker.id}">
         <div class="compact-dial-wrap ${showDialBackground ? "compact-dial-wrap-solid" : "compact-dial-wrap-transparent"}" style="--tracker-color:${urgency.color};--tracker-accent:${urgency.accent};">
@@ -713,7 +714,7 @@ class MaintenanceTrackerManager extends HTMLElement {
             <circle class="dial-progress" cx="30" cy="30" r="24" style="stroke:${urgency.color};stroke-dasharray:${circumference};stroke-dashoffset:${dashOffset};"></circle>
           </svg>
           <div class="compact-dial-center">
-            <div class="compact-dial-center-fill" style="color:${compactIconColor};">
+            <div class="compact-dial-center-fill" style="color:${compactIconColor};${compactCenterFillBg ? `background:${compactCenterFillBg};` : ""}">
               <ha-icon icon="${compactIcon}"></ha-icon>
             </div>
           </div>
