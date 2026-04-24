@@ -746,7 +746,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         }
         .compact-summary {
           font-size: 0.66rem;
-          color: var(--secondary-text-color);
+          color: var(--primary-text-color);
           line-height: 1.15;
         }
         .compact-urgency {
