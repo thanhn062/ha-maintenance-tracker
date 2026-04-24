@@ -14,6 +14,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       compact_show_summary: false,
       compact_show_urgency: false,
       compact_show_tile_background: true,
+      compact_show_dial_background: true,
     };
   }
 
@@ -468,9 +469,10 @@ class MaintenanceTrackerManager extends HTMLElement {
     const showSummary = this._config.compact_show_summary === true;
     const showUrgency = this._config.compact_show_urgency === true;
     const showTileBackground = this._config.compact_show_tile_background !== false;
+    const showDialBackground = this._config.compact_show_dial_background !== false;
     return `
       <button class="compact-tile ${showTileBackground ? "compact-tile-surface" : "compact-tile-plain"}" title="${tracker.title}: ${tracker.days_since_done} day${tracker.days_since_done === 1 ? "" : "s"} passed, ${urgency.label}" data-compact-id="${tracker.id}">
-        <div class="compact-dial-wrap" style="--tracker-color:${urgency.color};--tracker-accent:${urgency.accent};">
+        <div class="compact-dial-wrap ${showDialBackground ? "compact-dial-wrap-solid" : "compact-dial-wrap-transparent"}" style="--tracker-color:${urgency.color};--tracker-accent:${urgency.accent};">
           <svg class="compact-dial" viewBox="0 0 60 60" aria-hidden="true">
             <circle class="dial-bg" cx="30" cy="30" r="24"></circle>
             <circle class="dial-progress" cx="30" cy="30" r="24" style="stroke:${urgency.color};stroke-dasharray:${circumference};stroke-dashoffset:${dashOffset};"></circle>
@@ -711,7 +713,12 @@ class MaintenanceTrackerManager extends HTMLElement {
           width: 60px;
           height: 60px;
           border-radius: 999px;
+        }
+        .compact-dial-wrap-solid {
           background: rgba(18, 22, 28, 0.82);
+        }
+        .compact-dial-wrap-transparent {
+          background: transparent;
         }
         .compact-dial {
           width: 60px;
@@ -1284,6 +1291,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       compact_show_summary: false,
       compact_show_urgency: false,
       compact_show_tile_background: true,
+      compact_show_dial_background: true,
       ...config,
     };
     this._render();
@@ -1403,6 +1411,10 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
               <input id="compact-show-tile-background" type="checkbox" ${this._config?.compact_show_tile_background !== false ? "checked" : ""} />
               <span>Show tile background</span>
             </label>
+            <label class="picker-item">
+              <input id="compact-show-dial-background" type="checkbox" ${this._config?.compact_show_dial_background !== false ? "checked" : ""} />
+              <span>Show dial background</span>
+            </label>
           </div>
         </div>
         <div class="picker">
@@ -1444,6 +1456,9 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     });
     this.shadowRoot.getElementById("compact-show-tile-background").addEventListener("change", (event) => {
       this._emitConfig({ compact_show_tile_background: event.target.checked });
+    });
+    this.shadowRoot.getElementById("compact-show-dial-background").addEventListener("change", (event) => {
+      this._emitConfig({ compact_show_dial_background: event.target.checked });
     });
     this.shadowRoot.querySelectorAll("[data-slug]").forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
