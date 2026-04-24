@@ -35,6 +35,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._allIconOptions = null;
     this._allIconsPromise = null;
     this._compactResetArmedId = null;
+    this._managerResetArmedId = null;
     this._eventUnsubscribe = null;
     this._subscribedHass = null;
     this._preview = false;
@@ -681,6 +682,10 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._compactResetArmedId = null;
   }
 
+  _clearManagerResetArm() {
+    this._managerResetArmedId = null;
+  }
+
   async _handleCompactTrackerTap(tracker) {
     if (!tracker) return;
     if (this._compactResetArmedId === tracker.id) {
@@ -707,6 +712,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       tracker.status === "due"
         ? "Due today"
         : this._summaryText(tracker).replace(/^in /, "In ");
+    const isManagerResetArmed = this._managerResetArmedId === tracker.id;
     return `
       <div class="tracker-card" style="--tracker-color:${color};--tracker-accent:${accent};">
         <div class="tracker-top">
@@ -737,7 +743,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         </div>
         ${tracker.notes ? `<div class="tracker-notes">${tracker.notes}</div>` : ""}
         <div class="tracker-actions">
-          <button class="action action-primary" data-action="reset" data-id="${tracker.id}">Reset</button>
+          <button class="action ${isManagerResetArmed ? "action-danger" : "action-primary"}" data-action="reset" data-id="${tracker.id}">${isManagerResetArmed ? "Confirm" : "Reset"}</button>
           <button class="action" data-action="edit" data-id="${tracker.id}">Edit</button>
           <button class="action action-danger" data-action="delete" data-id="${tracker.id}">Delete</button>
         </div>
@@ -1609,14 +1615,28 @@ class MaintenanceTrackerManager extends HTMLElement {
 
     this.shadowRoot.getElementById("add-tracker")?.addEventListener("click", () => {
       this._clearCompactResetArm();
+      this._clearManagerResetArm();
       this._openDialog("create");
     });
     this.shadowRoot.addEventListener("click", (event) => {
-      if (!this._compactResetArmedId) return;
-      const armedTile = event.target.closest?.(`[data-compact-id="${this._compactResetArmedId}"]`);
-      if (armedTile) return;
-      this._clearCompactResetArm();
-      requestAnimationFrame(() => this._render());
+      let changed = false;
+      if (this._compactResetArmedId) {
+        const armedTile = event.target.closest?.(`[data-compact-id="${this._compactResetArmedId}"]`);
+        if (!armedTile) {
+          this._clearCompactResetArm();
+          changed = true;
+        }
+      }
+      if (this._managerResetArmedId) {
+        const armedButton = event.target.closest?.(`[data-action="reset"][data-id="${this._managerResetArmedId}"]`);
+        if (!armedButton) {
+          this._clearManagerResetArm();
+          changed = true;
+        }
+      }
+      if (changed) {
+        requestAnimationFrame(() => this._render());
+      }
     }, { capture: true });
     this.shadowRoot.querySelectorAll("[data-action]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1626,7 +1646,15 @@ class MaintenanceTrackerManager extends HTMLElement {
         const action = button.dataset.action;
         if (action === "edit") this._openDialog("edit", tracker);
         if (action === "delete") this._deleteTracker(tracker);
-        if (action === "reset") this._resetTracker(tracker);
+        if (action === "reset") {
+          if (this._managerResetArmedId === tracker.id) {
+            this._managerResetArmedId = null;
+            this._resetTracker(tracker);
+            return;
+          }
+          this._managerResetArmedId = tracker.id;
+          this._render();
+        }
       });
     });
     this.shadowRoot.querySelectorAll("[data-compact-id]").forEach((button) => {
@@ -1639,6 +1667,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-close-dialog]").forEach((button) => {
       button.addEventListener("click", () => {
         this._clearCompactResetArm();
+        this._clearManagerResetArm();
         this._closeDialog();
       });
     });
