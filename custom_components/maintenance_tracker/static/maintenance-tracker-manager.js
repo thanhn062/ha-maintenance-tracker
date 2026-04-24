@@ -1530,26 +1530,6 @@ class MaintenanceTrackerManager extends HTMLElement {
       }
     });
     if (iconInput && previewIcon) {
-      iconInput.addEventListener("focus", () => {
-        if (!this._dialog) return;
-        this._syncDialogTrackerFromForm();
-        const selectionStart = iconInput.selectionStart;
-        const selectionEnd = iconInput.selectionEnd;
-        this._dialog.iconPickerOpen = true;
-        this._dialog.iconPickerMode = "all";
-        if (!this._allIconOptions && !this._dialog.allIconsLoading) {
-          this._dialog.allIconsLoading = true;
-          this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
-          void this._ensureAllIconsLoaded().then(() => {
-            if (!this._dialog) return;
-            this._dialog.allIconsLoading = false;
-            this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
-          });
-          return;
-        }
-        this._syncDialogTrackerFromForm();
-        this._render();
-      });
       iconInput.addEventListener("input", () => {
         if (!this._dialog) return;
         this._syncDialogTrackerFromForm();
