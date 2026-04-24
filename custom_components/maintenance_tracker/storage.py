@@ -22,6 +22,10 @@ def _utc_now_iso() -> str:
     return dt_util.utcnow().isoformat().replace("+00:00", "Z")
 
 
+def _local_today() -> date:
+    return dt_util.as_local(dt_util.now()).date()
+
+
 def _normalize_slug(value: str) -> str:
     slug = value.strip().lower().replace(" ", "_")
     if not SLUG_REGEX.match(slug):
@@ -43,7 +47,7 @@ def _validate_last_done(value: str) -> str:
         parsed = date.fromisoformat(value)
     except ValueError as err:
         raise ValueError("last_done must use YYYY-MM-DD.") from err
-    if parsed > date.today():
+    if parsed > _local_today():
         raise ValueError("last_done cannot be in the future.")
     return parsed.isoformat()
 
@@ -57,7 +61,7 @@ def _validate_lifespan(value: int) -> int:
 
 def _derive_tracker(tracker: dict[str, Any], due_soon_threshold: int) -> dict[str, Any]:
     last_done = date.fromisoformat(tracker["last_done"])
-    today = date.today()
+    today = _local_today()
     days_since_done = (today - last_done).days
     lifespan_days = tracker["lifespan_days"]
     next_due_date = last_done.toordinal() + lifespan_days
@@ -182,7 +186,7 @@ class TrackerStore:
         self, tracker_id: str, reset_date: str | None = None
     ) -> dict[str, Any]:
         """Reset tracker last-done date."""
-        target_date = reset_date or date.today().isoformat()
+        target_date = reset_date or _local_today().isoformat()
         return await self.async_update_tracker(
             tracker_id,
             {"last_done": _validate_last_done(target_date)},

@@ -293,6 +293,9 @@ class MaintenanceTrackerManager extends HTMLElement {
   }
 
   _openDialog(mode, tracker = null) {
+    const localToday = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 10);
     this._dialog = {
       mode,
       tracker: tracker
@@ -302,7 +305,7 @@ class MaintenanceTrackerManager extends HTMLElement {
             slug: "",
             icon: "mdi:hammer-wrench",
             lifespan_days: 14,
-            last_done: new Date().toISOString().slice(0, 10),
+            last_done: localToday,
             notes: "",
             category: "",
           },
