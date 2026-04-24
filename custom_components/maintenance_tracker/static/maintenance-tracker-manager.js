@@ -1482,13 +1482,13 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     this.shadowRoot.getElementById("mode").addEventListener("change", (event) => {
       this._emitConfig({ mode: event.target.value });
     });
-    this.shadowRoot.getElementById("compact-count").addEventListener("input", (event) => {
+    this.shadowRoot.getElementById("compact-count").addEventListener("change", (event) => {
       this._emitConfig({ compact_count: Number(event.target.value || 4) });
     });
-    this.shadowRoot.getElementById("visibility-due-days").addEventListener("input", (event) => {
+    this.shadowRoot.getElementById("visibility-due-days").addEventListener("change", (event) => {
       this._emitConfig({ visibility_due_days: Number(event.target.value || 0) });
     });
-    this.shadowRoot.getElementById("visibility-overdue-days").addEventListener("input", (event) => {
+    this.shadowRoot.getElementById("visibility-overdue-days").addEventListener("change", (event) => {
       this._emitConfig({ visibility_overdue_days: Number(event.target.value || 0) });
     });
     this.shadowRoot.getElementById("compact-show-names").addEventListener("change", (event) => {
