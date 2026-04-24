@@ -850,18 +850,6 @@ class MaintenanceTrackerManager extends HTMLElement {
     `;
   }
 
-  _renderVisibilityEmptyState() {
-    return `
-      <div class="visibility-empty-state">
-        <div class="visibility-empty-icon">
-          <ha-icon icon="mdi:calendar-check"></ha-icon>
-        </div>
-        <div class="visibility-empty-title">Maintenance Task</div>
-        <div class="visibility-empty-copy">No tasks are due in the current visibility window.</div>
-      </div>
-    `;
-  }
-
   _render() {
     const displayTrackers = this._displayTrackers();
     const trackersMarkup = displayTrackers.length
@@ -869,8 +857,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       : `<div class="empty-state">No trackers yet. Add one to get started.</div>`;
     const isCompact = this._config.mode === "compact";
     const isBadge = this._config.mode === "badge";
-    const isEditMode = Boolean(this._hass?.editMode);
-    const hideForVisibility = (isCompact || isBadge) && !displayTrackers.length && !isEditMode;
+    const hideForVisibility = (isCompact || isBadge) && !displayTrackers.length;
     this.style.display = hideForVisibility ? "none" : "block";
 
     if (hideForVisibility) {
@@ -880,10 +867,10 @@ class MaintenanceTrackerManager extends HTMLElement {
 
     const compactMarkup = displayTrackers.length
       ? displayTrackers.map((tracker) => this._renderCompactTracker(tracker)).join("")
-      : this._renderVisibilityEmptyState();
+      : "";
     const badgeMarkup = displayTrackers.length
       ? displayTrackers.map((tracker) => this._renderBadgeTracker(tracker)).join("")
-      : this._renderVisibilityEmptyState();
+      : "";
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -1221,41 +1208,6 @@ class MaintenanceTrackerManager extends HTMLElement {
           margin-bottom: 12px;
           color: #d9485f;
           border: 1px solid rgba(217,72,95,0.25);
-        }
-        .visibility-empty-state {
-          border: 1px solid var(--divider-color);
-          border-radius: 20px;
-          padding: 18px 16px;
-          background: var(--ha-card-background, var(--card-background-color));
-          box-shadow: var(--ha-card-box-shadow, none);
-          display: grid;
-          justify-items: center;
-          text-align: center;
-          gap: 8px;
-        }
-        .visibility-empty-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 999px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(42,157,143,0.14);
-          color: #2a9d8f;
-        }
-        .visibility-empty-icon ha-icon {
-          --mdc-icon-size: 22px;
-        }
-        .visibility-empty-title {
-          font-size: 0.92rem;
-          font-weight: 700;
-          line-height: 1.2;
-        }
-        .visibility-empty-copy {
-          font-size: 0.82rem;
-          color: var(--secondary-text-color);
-          line-height: 1.35;
-          max-width: 24ch;
         }
         .dialog-backdrop {
           position: fixed;
