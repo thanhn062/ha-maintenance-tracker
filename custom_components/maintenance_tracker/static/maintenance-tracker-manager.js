@@ -957,6 +957,12 @@ class MaintenanceTrackerManager extends HTMLElement {
           margin-top: 14px;
           flex-wrap: wrap;
         }
+        .dialog-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          align-items: stretch;
+          flex-wrap: unset;
+        }
         .dialog-bottom-spacer {
           height: 18px;
           pointer-events: none;
@@ -1101,11 +1107,15 @@ class MaintenanceTrackerManager extends HTMLElement {
         }
         .icon-picker-bar {
           display: grid;
-          grid-template-columns: auto 1fr auto;
+          grid-template-columns: auto 1fr;
+          grid-template-areas:
+            "preview input"
+            "toggle toggle";
           gap: 8px;
           align-items: center;
         }
         .icon-picker-preview {
+          grid-area: preview;
           width: 44px;
           height: 44px;
           border-radius: 14px;
@@ -1119,8 +1129,14 @@ class MaintenanceTrackerManager extends HTMLElement {
         .icon-picker-preview ha-icon {
           --mdc-icon-size: 24px;
         }
+        #icon-search-input {
+          grid-area: input;
+          min-width: 0;
+        }
         .icon-picker-toggle {
+          grid-area: toggle;
           white-space: nowrap;
+          justify-content: center;
         }
         .icon-picker-panel {
           border: 1px solid rgba(127,127,127,0.16);
@@ -1242,12 +1258,8 @@ class MaintenanceTrackerManager extends HTMLElement {
             max-height: calc(100dvh - 20px);
             border-radius: 18px;
           }
-          .icon-picker-bar {
-            grid-template-columns: auto 1fr;
-          }
-          .icon-picker-search,
-          .icon-picker-toggle {
-            grid-column: 1 / -1;
+          .dialog-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
         }
       </style>
