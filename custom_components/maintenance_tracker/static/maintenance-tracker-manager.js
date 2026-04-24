@@ -1189,7 +1189,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           align-items: flex-start;
           justify-content: center;
           z-index: 9999;
-          padding: 28px 16px 20px;
+          padding: 36px 16px 20px;
           overflow-y: auto;
           overscroll-behavior: contain;
           -webkit-overflow-scrolling: touch;
@@ -1440,7 +1440,7 @@ class MaintenanceTrackerManager extends HTMLElement {
             padding: 0;
           }
           .dialog-backdrop {
-            padding: 18px 10px 14px;
+            padding: 24px 10px 14px;
           }
           .dialog {
             max-height: calc(100dvh - 36px);
