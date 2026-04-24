@@ -1146,7 +1146,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           flex-wrap: unset;
         }
         .dialog-bottom-spacer {
-          height: 200px;
+          height: 280px;
           pointer-events: none;
         }
         .action,
