@@ -12,8 +12,10 @@ from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
     CONF_DUE_SOON_THRESHOLD,
+    CONF_NOTIFY_HOUR,
     CONF_NOTIFY_ON_DUE,
     DEFAULT_DUE_SOON_THRESHOLD,
+    DEFAULT_NOTIFY_HOUR,
     DEFAULT_NOTIFY_ON_DUE,
     DOMAIN,
 )
@@ -77,6 +79,12 @@ class MaintenanceTrackerOptionsFlow(config_entries.OptionsFlowWithReload):
                         CONF_NOTIFY_ON_DUE, DEFAULT_NOTIFY_ON_DUE
                     ),
                 ): bool,
+                vol.Required(
+                    CONF_NOTIFY_HOUR,
+                    default=self.config_entry.options.get(
+                        CONF_NOTIFY_HOUR, DEFAULT_NOTIFY_HOUR
+                    ),
+                ): vol.All(vol.Coerce(int), vol.Range(min=0, max=23)),
             }
         )
 

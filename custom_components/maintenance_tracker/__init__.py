@@ -14,11 +14,14 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_DUE_SOON_THRESHOLD,
+    CONF_NOTIFY_HOUR,
     CONF_NOTIFY_ON_DUE,
     DEFAULT_DUE_SOON_THRESHOLD,
+    DEFAULT_NOTIFY_HOUR,
     DEFAULT_NOTIFY_ON_DUE,
     DOMAIN,
     EVENT_TRACKERS_UPDATED,
@@ -96,14 +99,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _async_process_due_notifications(hass)
 
     async def async_handle_due_check(now) -> None:
-        """Process due notifications on the daily schedule."""
+        """Process due notifications on the hourly schedule."""
         del now
         await _async_process_due_notifications(hass)
 
     hass.data[DOMAIN][DATA_DUE_CHECK_UNSUB] = async_track_time_change(
         hass,
         async_handle_due_check,
-        hour=0,
         minute=0,
         second=5,
     )
@@ -223,6 +225,10 @@ async def _async_process_due_notifications(hass: HomeAssistant) -> None:
     if entry is None:
         return
     enabled = bool(entry.options.get(CONF_NOTIFY_ON_DUE, DEFAULT_NOTIFY_ON_DUE))
+    notify_hour = int(entry.options.get(CONF_NOTIFY_HOUR, DEFAULT_NOTIFY_HOUR))
+    current_hour = dt_util.as_local(dt_util.now()).hour
+    if current_hour != notify_hour:
+        return
     await store.async_process_due_notifications(
         enabled=enabled,
     )
