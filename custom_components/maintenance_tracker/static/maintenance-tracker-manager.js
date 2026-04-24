@@ -11,6 +11,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       selected_trackers: [],
       compact_show_names: true,
       compact_show_percentage: true,
+      compact_show_summary: false,
       compact_show_urgency: false,
       compact_show_tile_background: true,
     };
@@ -463,6 +464,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     const progressPercent = Math.round(progress * 100);
     const showNames = this._config.compact_show_names !== false;
     const showPercentage = this._config.compact_show_percentage !== false;
+    const showSummary = this._config.compact_show_summary === true;
     const showUrgency = this._config.compact_show_urgency === true;
     const showTileBackground = this._config.compact_show_tile_background !== false;
     return `
@@ -479,6 +481,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         <div class="compact-meta">
           ${showNames ? `<div class="compact-title">${tracker.title}</div>` : ""}
           ${showPercentage ? `<div class="compact-subtitle">${progressPercent}%</div>` : ""}
+          ${showSummary ? `<div class="compact-summary">${this._summaryText(tracker, { natural: true })}</div>` : ""}
           ${showUrgency ? `<div class="compact-urgency" style="color:${urgency.color};">${urgency.label}</div>` : ""}
         </div>
       </button>
@@ -739,6 +742,11 @@ class MaintenanceTrackerManager extends HTMLElement {
         .compact-subtitle {
           font-size: 0.68rem;
           color: var(--secondary-text-color);
+        }
+        .compact-summary {
+          font-size: 0.66rem;
+          color: var(--secondary-text-color);
+          line-height: 1.15;
         }
         .compact-urgency {
           font-size: 0.62rem;
@@ -1132,6 +1140,9 @@ class MaintenanceTrackerManager extends HTMLElement {
           .compact-title {
             font-size: 0.68rem;
           }
+          .compact-summary {
+            font-size: 0.62rem;
+          }
           .tracker-top {
             align-items: center;
           }
@@ -1269,6 +1280,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       selected_trackers: [],
       compact_show_names: true,
       compact_show_percentage: true,
+      compact_show_summary: false,
       compact_show_urgency: false,
       compact_show_tile_background: true,
       ...config,
@@ -1379,6 +1391,10 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
               <span>Show percentage</span>
             </label>
             <label class="picker-item">
+              <input id="compact-show-summary" type="checkbox" ${this._config?.compact_show_summary === true ? "checked" : ""} />
+              <span>Show summary</span>
+            </label>
+            <label class="picker-item">
               <input id="compact-show-urgency" type="checkbox" ${this._config?.compact_show_urgency === true ? "checked" : ""} />
               <span>Show urgency</span>
             </label>
@@ -1418,6 +1434,9 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     });
     this.shadowRoot.getElementById("compact-show-percentage").addEventListener("change", (event) => {
       this._emitConfig({ compact_show_percentage: event.target.checked });
+    });
+    this.shadowRoot.getElementById("compact-show-summary").addEventListener("change", (event) => {
+      this._emitConfig({ compact_show_summary: event.target.checked });
     });
     this.shadowRoot.getElementById("compact-show-urgency").addEventListener("change", (event) => {
       this._emitConfig({ compact_show_urgency: event.target.checked });
