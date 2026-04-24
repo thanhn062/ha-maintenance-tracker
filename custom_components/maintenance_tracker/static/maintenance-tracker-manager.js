@@ -620,6 +620,12 @@ class MaintenanceTrackerManager extends HTMLElement {
     }
   }
 
+  async _confirmResetTracker(tracker) {
+    if (!tracker) return;
+    if (!confirm(`Reset "${tracker.title}" now?`)) return;
+    await this._resetTracker(tracker);
+  }
+
   _renderTracker(tracker) {
     const progress = Math.max(0, Math.min(1, Number(tracker.progress_ratio || 0)));
     const circumference = 2 * Math.PI * 42;
@@ -1475,6 +1481,13 @@ class MaintenanceTrackerManager extends HTMLElement {
         if (action === "edit") this._openDialog("edit", tracker);
         if (action === "delete") this._deleteTracker(tracker);
         if (action === "reset") this._resetTracker(tracker);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-compact-id]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const tracker = this._trackers.find((item) => item.id === button.dataset.compactId);
+        if (!tracker) return;
+        this._confirmResetTracker(tracker);
       });
     });
     this.shadowRoot.querySelectorAll("[data-close-dialog]").forEach((button) => {
