@@ -465,7 +465,22 @@ class MaintenanceTrackerManager extends HTMLElement {
     return matches.slice(0, 160);
   }
 
+  _syncDialogTrackerFromForm() {
+    if (!this._dialog || !this.shadowRoot) return;
+    const titleInput = this.shadowRoot.querySelector('input[name="title"]');
+    const lifespanInput = this.shadowRoot.querySelector('input[name="lifespan_days"]');
+    const lastDoneInput = this.shadowRoot.querySelector('input[name="last_done"]');
+    const categoryInput = this.shadowRoot.querySelector('input[name="category"]');
+    const notesInput = this.shadowRoot.querySelector('textarea[name="notes"]');
+    if (titleInput) this._dialog.tracker.title = titleInput.value;
+    if (lifespanInput) this._dialog.tracker.lifespan_days = Number(lifespanInput.value || 14);
+    if (lastDoneInput) this._dialog.tracker.last_done = lastDoneInput.value;
+    if (categoryInput) this._dialog.tracker.category = categoryInput.value;
+    if (notesInput) this._dialog.tracker.notes = notesInput.value;
+  }
+
   _rerenderDialogAndRestoreIconInput(selectionStart = null, selectionEnd = null) {
+    this._syncDialogTrackerFromForm();
     this._render();
     requestAnimationFrame(() => {
       const nextInput = this.shadowRoot?.querySelector('input[name="icon"]');
@@ -1484,12 +1499,40 @@ class MaintenanceTrackerManager extends HTMLElement {
     };
     if (titleInput && previewTitle) {
       titleInput.addEventListener("input", () => {
+        if (this._dialog) {
+          this._dialog.tracker.title = titleInput.value;
+        }
         previewTitle.textContent = titleInput.value.trim() || "Tracker title";
       });
     }
+    const lifespanInput = this.shadowRoot.querySelector('input[name="lifespan_days"]');
+    lifespanInput?.addEventListener("input", () => {
+      if (this._dialog) {
+        this._dialog.tracker.lifespan_days = Number(lifespanInput.value || 14);
+      }
+    });
+    const lastDoneInput = this.shadowRoot.querySelector('input[name="last_done"]');
+    lastDoneInput?.addEventListener("input", () => {
+      if (this._dialog) {
+        this._dialog.tracker.last_done = lastDoneInput.value;
+      }
+    });
+    const categoryInput = this.shadowRoot.querySelector('input[name="category"]');
+    categoryInput?.addEventListener("input", () => {
+      if (this._dialog) {
+        this._dialog.tracker.category = categoryInput.value;
+      }
+    });
+    const notesInput = this.shadowRoot.querySelector('textarea[name="notes"]');
+    notesInput?.addEventListener("input", () => {
+      if (this._dialog) {
+        this._dialog.tracker.notes = notesInput.value;
+      }
+    });
     if (iconInput && previewIcon) {
       iconInput.addEventListener("focus", () => {
         if (!this._dialog) return;
+        this._syncDialogTrackerFromForm();
         const selectionStart = iconInput.selectionStart;
         const selectionEnd = iconInput.selectionEnd;
         this._dialog.iconPickerOpen = true;
@@ -1504,10 +1547,12 @@ class MaintenanceTrackerManager extends HTMLElement {
           });
           return;
         }
+        this._syncDialogTrackerFromForm();
         this._render();
       });
       iconInput.addEventListener("input", () => {
         if (!this._dialog) return;
+        this._syncDialogTrackerFromForm();
         const selectionStart = iconInput.selectionStart;
         const selectionEnd = iconInput.selectionEnd;
         this._dialog.iconQuery = iconInput.value.trim();
@@ -1528,12 +1573,14 @@ class MaintenanceTrackerManager extends HTMLElement {
     }
     showCommonIcons?.addEventListener("click", () => {
       if (!this._dialog) return;
+      this._syncDialogTrackerFromForm();
       this._dialog.iconPickerOpen = true;
       this._dialog.iconPickerMode = "common";
       this._render();
     });
     showAllIcons?.addEventListener("click", () => {
       if (!this._dialog) return;
+      this._syncDialogTrackerFromForm();
       this._dialog.iconPickerOpen = true;
       this._dialog.iconPickerMode = "all";
       if (!this._allIconOptions && !this._dialog.allIconsLoading) {
