@@ -350,14 +350,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     const selected = Array.isArray(this._config.selected_trackers) ? this._config.selected_trackers : [];
     const selectedSet = new Set(selected.map((item) => `${item}`.trim().toLowerCase()).filter(Boolean));
     const visible = selectedSet.size
-      ? (() => {
-          const trackerMap = new Map(
-            this._trackers.map((tracker) => [(`${tracker.slug || tracker.id || ""}`.toLowerCase()), tracker])
-          );
-          return selected
-            .map((item) => trackerMap.get(`${item}`.trim().toLowerCase()))
-            .filter(Boolean);
-        })()
+      ? this._trackers.filter((tracker) => selectedSet.has((tracker.slug || tracker.id || "").toLowerCase()))
       : [...this._trackers];
     if (this._config.mode === "compact" || this._config.mode === "badge") {
       const dueDays = Math.max(0, Number(this._config.visibility_due_days ?? 3));
@@ -1974,7 +1967,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
         </div>
         <div class="picker">
           <div class="picker-title">Trackers to display</div>
-          <div class="help">Leave all unchecked to use automatic ordering. In compact mode, selected trackers keep the order you choose and the first visible ${Number(this._config?.compact_count || 4)} are shown.</div>
+          <div class="help">Leave all unchecked to use automatic ordering. Compact and badge modes show up to the Display item count after visibility filtering.</div>
           ${this._loading ? `<div class="help">Loading trackers...</div>` : this._trackers.length ? `
             <div class="picker-grid">
               ${this._trackers.map((tracker) => `
