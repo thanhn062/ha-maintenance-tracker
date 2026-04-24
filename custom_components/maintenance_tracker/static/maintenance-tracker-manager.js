@@ -1028,12 +1028,12 @@ class MaintenanceTrackerManager extends HTMLElement {
           appearance: none;
           border: 1px solid var(--badge-border, var(--divider-color));
           border-radius: 999px;
-          padding: 7px 12px 7px 8px;
+          padding: 8px 14px 8px 9px;
           background: var(--badge-bg, var(--ha-card-background, var(--card-background-color)));
           color: var(--badge-text, var(--primary-text-color));
           display: inline-flex;
           align-items: center;
-          gap: 8px;
+          gap: 9px;
           text-align: left;
           box-shadow: none;
           font: inherit;
@@ -1043,15 +1043,15 @@ class MaintenanceTrackerManager extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 26px;
-          height: 26px;
+          width: 28px;
+          height: 28px;
           border-radius: 999px;
           background: var(--badge-accent-bg);
           color: var(--badge-accent);
           flex: 0 0 auto;
         }
         .badge-icon ha-icon {
-          --mdc-icon-size: 17px;
+          --mdc-icon-size: 18px;
         }
         .badge-copy {
           display: grid;
@@ -1059,11 +1059,11 @@ class MaintenanceTrackerManager extends HTMLElement {
           line-height: 1.1;
         }
         .badge-title {
-          font-size: 0.8rem;
+          font-size: 0.84rem;
           font-weight: 600;
         }
         .badge-summary {
-          font-size: 0.72rem;
+          font-size: 0.76rem;
           font-weight: 500;
           color: var(--badge-summary, var(--secondary-text-color));
           opacity: 1;
@@ -1579,21 +1579,21 @@ class MaintenanceTrackerManager extends HTMLElement {
             gap: 8px;
           }
           .badge-tile {
-            padding: 6px 11px 6px 7px;
-            gap: 6px;
+            padding: 7px 12px 7px 8px;
+            gap: 7px;
           }
           .badge-icon {
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
           }
           .badge-icon ha-icon {
-            --mdc-icon-size: 16px;
+            --mdc-icon-size: 17px;
           }
           .badge-title {
-            font-size: 0.78rem;
+            font-size: 0.8rem;
           }
           .badge-summary {
-            font-size: 0.7rem;
+            font-size: 0.72rem;
           }
           .compact-shell {
             grid-template-columns: repeat(4, minmax(0, 1fr));
