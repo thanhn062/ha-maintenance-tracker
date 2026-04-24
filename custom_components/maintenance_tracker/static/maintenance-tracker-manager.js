@@ -382,7 +382,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     if (natural && daysRemaining === 1) {
       return "tomorrow";
     }
-    return `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} left`;
+    return `in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`;
   }
 
   _openDialog(mode, tracker = null) {
@@ -706,7 +706,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     const summaryLine =
       tracker.status === "due"
         ? "Due today"
-        : this._summaryText(tracker);
+        : this._summaryText(tracker).replace(/^in /, "In ");
     return `
       <div class="tracker-card" style="--tracker-color:${color};--tracker-accent:${accent};">
         <div class="tracker-top">
