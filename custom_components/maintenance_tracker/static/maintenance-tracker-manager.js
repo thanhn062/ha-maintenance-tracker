@@ -417,11 +417,6 @@ class MaintenanceTrackerManager extends HTMLElement {
       tracker.status === "due"
         ? "Due today"
         : this._summaryText(tracker);
-    const nextLine =
-      tracker.status === "overdue"
-        ? `Missed by ${tracker.days_overdue} day${tracker.days_overdue === 1 ? "" : "s"}`
-        : `Next due ${tracker.next_due_date}`;
-
     return `
       <div class="tracker-card" style="--tracker-color:${color};--tracker-accent:${accent};">
         <div class="tracker-top">
@@ -448,7 +443,6 @@ class MaintenanceTrackerManager extends HTMLElement {
               <span>Age ${ageDays} day${ageDays === 1 ? "" : "s"}</span>
               <span>Lifespan ${lifespanDays} day${lifespanDays === 1 ? "" : "s"}</span>
             </div>
-            <div class="tracker-next-line">${nextLine}</div>
           </div>
         </div>
         ${tracker.notes ? `<div class="tracker-notes">${tracker.notes}</div>` : ""}
