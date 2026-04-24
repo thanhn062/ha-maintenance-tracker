@@ -1,5 +1,12 @@
 # Maintenance Tracker
 
+[![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg?style=for-the-badge)](https://github.com/thanhn062/ha-maintenance-tracker/releases)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.8.0-blue.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io/)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://hacs.xyz/)
+[![Validate](https://img.shields.io/github/actions/workflow/status/thanhn062/ha-maintenance-tracker/validate.yaml?branch=main&style=for-the-badge&label=validate)](https://github.com/thanhn062/ha-maintenance-tracker/actions/workflows/validate.yaml)
+[![Hassfest](https://img.shields.io/github/actions/workflow/status/thanhn062/ha-maintenance-tracker/hassfest.yaml?branch=main&style=for-the-badge&label=hassfest)](https://github.com/thanhn062/ha-maintenance-tracker/actions/workflows/hassfest.yaml)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/thanhnatos)
+
 Contained Home Assistant maintenance tracker integration with:
 
 - integration-owned JSON storage
@@ -38,4 +45,3 @@ custom_components/
 
 - The card JS is served from inside the integration, not `/config/www`, so the runtime shape stays HACS-friendly.
 - The current Home Assistant test target is mirrored from this repo into the live HA config after explicit approval.
-
