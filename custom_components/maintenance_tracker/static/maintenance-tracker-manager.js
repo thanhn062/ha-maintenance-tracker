@@ -493,9 +493,8 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   _renderBadgeTracker(tracker) {
     const urgency = this._urgencyInfo(tracker);
-    const textColor = urgency.priority >= 2 ? "#111827" : "#ffffff";
     return `
-      <button class="badge-tile" style="--badge-bg:${urgency.color};--badge-fg:${textColor};" title="${tracker.title}: ${this._summaryText(tracker, { natural: true })}" data-badge-id="${tracker.id}">
+      <button class="badge-tile" style="--badge-accent:${urgency.color};--badge-accent-bg:${urgency.accent};" title="${tracker.title}: ${this._summaryText(tracker, { natural: true })}" data-badge-id="${tracker.id}">
         <div class="badge-icon">
           <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
         </div>
@@ -642,44 +641,51 @@ class MaintenanceTrackerManager extends HTMLElement {
         .badge-shell {
           display: flex;
           flex-wrap: wrap;
-          gap: 10px;
+          gap: 8px;
         }
         .badge-tile {
           appearance: none;
-          border: none;
+          border: 1px solid var(--divider-color);
           border-radius: 999px;
-          padding: 12px 18px;
-          background: var(--badge-bg);
-          color: var(--badge-fg);
+          padding: 8px 14px 8px 9px;
+          background: var(--ha-card-background, var(--card-background-color));
+          color: var(--primary-text-color);
           display: inline-flex;
           align-items: center;
-          gap: 12px;
+          gap: 9px;
           text-align: left;
-          box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+          box-shadow: none;
           font: inherit;
+          line-height: 1;
         }
         .badge-icon {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--badge-fg);
+          width: 28px;
+          height: 28px;
+          border-radius: 999px;
+          background: var(--badge-accent-bg);
+          color: var(--badge-accent);
+          flex: 0 0 auto;
         }
         .badge-icon ha-icon {
-          --mdc-icon-size: 28px;
+          --mdc-icon-size: 18px;
         }
         .badge-copy {
           display: grid;
-          gap: 1px;
-          line-height: 1.05;
+          gap: 2px;
+          line-height: 1.1;
         }
         .badge-title {
-          font-size: 0.9rem;
-          font-weight: 700;
+          font-size: 0.84rem;
+          font-weight: 600;
         }
         .badge-summary {
-          font-size: 0.88rem;
-          font-weight: 700;
-          opacity: 0.92;
+          font-size: 0.76rem;
+          font-weight: 500;
+          color: var(--secondary-text-color);
+          opacity: 1;
         }
         .compact-tile {
           appearance: none;
@@ -1097,15 +1103,21 @@ class MaintenanceTrackerManager extends HTMLElement {
             gap: 8px;
           }
           .badge-tile {
-            padding: 10px 14px;
-            gap: 10px;
+            padding: 7px 12px 7px 8px;
+            gap: 7px;
+          }
+          .badge-icon {
+            width: 26px;
+            height: 26px;
           }
           .badge-icon ha-icon {
-            --mdc-icon-size: 24px;
+            --mdc-icon-size: 17px;
           }
-          .badge-title,
+          .badge-title {
+            font-size: 0.8rem;
+          }
           .badge-summary {
-            font-size: 0.82rem;
+            font-size: 0.72rem;
           }
           .compact-shell {
             grid-template-columns: repeat(4, minmax(0, 1fr));
