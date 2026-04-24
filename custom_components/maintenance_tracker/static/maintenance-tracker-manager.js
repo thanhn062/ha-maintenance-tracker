@@ -10,7 +10,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       compact_count: 4,
       selected_trackers: [],
       compact_show_names: true,
-      compact_show_percentage: true,
+      compact_show_age_lifespan: true,
       compact_show_summary: false,
       compact_show_urgency: false,
       compact_show_tile_background: true,
@@ -461,9 +461,10 @@ class MaintenanceTrackerManager extends HTMLElement {
     const circumference = 2 * Math.PI * 24;
     const dashOffset = circumference * (1 - progress);
     const urgency = this._urgencyInfo(tracker);
-    const progressPercent = Math.round(progress * 100);
+    const ageDays = Number(tracker.days_since_done || 0);
+    const lifespanDays = Number(tracker.lifespan_days || 0);
     const showNames = this._config.compact_show_names !== false;
-    const showPercentage = this._config.compact_show_percentage !== false;
+    const showAgeLifespan = this._config.compact_show_age_lifespan !== false;
     const showSummary = this._config.compact_show_summary === true;
     const showUrgency = this._config.compact_show_urgency === true;
     const showTileBackground = this._config.compact_show_tile_background !== false;
@@ -480,7 +481,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         </div>
         <div class="compact-meta">
           ${showNames ? `<div class="compact-title">${tracker.title}</div>` : ""}
-          ${showPercentage ? `<div class="compact-subtitle">${progressPercent}%</div>` : ""}
+          ${showAgeLifespan ? `<div class="compact-subtitle">Age ${ageDays}d • Life ${lifespanDays}d</div>` : ""}
           ${showSummary ? `<div class="compact-summary">${this._summaryText(tracker, { natural: true })}</div>` : ""}
           ${showUrgency ? `<div class="compact-urgency" style="color:${urgency.color};">${urgency.label}</div>` : ""}
         </div>
@@ -1279,7 +1280,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       compact_count: 4,
       selected_trackers: [],
       compact_show_names: true,
-      compact_show_percentage: true,
+      compact_show_age_lifespan: true,
       compact_show_summary: false,
       compact_show_urgency: false,
       compact_show_tile_background: true,
@@ -1387,8 +1388,8 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
               <span>Show names</span>
             </label>
             <label class="picker-item">
-              <input id="compact-show-percentage" type="checkbox" ${this._config?.compact_show_percentage !== false ? "checked" : ""} />
-              <span>Show percentage</span>
+              <input id="compact-show-age-lifespan" type="checkbox" ${this._config?.compact_show_age_lifespan !== false ? "checked" : ""} />
+              <span>Show age/lifespan</span>
             </label>
             <label class="picker-item">
               <input id="compact-show-summary" type="checkbox" ${this._config?.compact_show_summary === true ? "checked" : ""} />
@@ -1432,8 +1433,8 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     this.shadowRoot.getElementById("compact-show-names").addEventListener("change", (event) => {
       this._emitConfig({ compact_show_names: event.target.checked });
     });
-    this.shadowRoot.getElementById("compact-show-percentage").addEventListener("change", (event) => {
-      this._emitConfig({ compact_show_percentage: event.target.checked });
+    this.shadowRoot.getElementById("compact-show-age-lifespan").addEventListener("change", (event) => {
+      this._emitConfig({ compact_show_age_lifespan: event.target.checked });
     });
     this.shadowRoot.getElementById("compact-show-summary").addEventListener("change", (event) => {
       this._emitConfig({ compact_show_summary: event.target.checked });
