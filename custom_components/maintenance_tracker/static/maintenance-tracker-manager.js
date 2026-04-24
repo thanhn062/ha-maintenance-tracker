@@ -696,7 +696,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     const previewCircumference = 2 * Math.PI * 32;
     const previewColor = "#2a9d8f";
     const iconPickerMode = this._dialog.iconPickerMode || "common";
-    const groupedIcons = iconPickerMode === "all" ? [] : this._groupedIcons(this._dialog.iconQuery);
+    const groupedIcons = iconPickerMode === "all" ? [] : this._groupedIcons("");
     const allIcons = iconPickerMode === "all" ? this._allIconMatches(this._dialog.iconQuery) : [];
     const hasQuery = Boolean(this._normalizeIconQuery(this._dialog.iconQuery));
     return `
@@ -743,7 +743,7 @@ class MaintenanceTrackerManager extends HTMLElement {
                       ? (hasQuery
                         ? "Search results from the full Material Design Icons catalog."
                         : "Showing the first set of Material Design Icons. Type to narrow it down.")
-                      : "Common icons for common tasks. Type to search the full Material Design Icons catalog."}</div>
+                      : "Common icons for common tasks. This list stays fixed; type to search the full Material Design Icons catalog."}</div>
                   ${iconPickerMode === "all" ? `
                     ${allIcons.length ? `
                       <div class="icon-grid icon-grid-all">
