@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import date
+import logging
 import re
 from typing import Any
 
@@ -12,10 +13,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import DEFAULT_DUE_SOON_THRESHOLD, STORAGE_KEY, STORAGE_VERSION
+from .const import (
+    DEFAULT_DUE_SOON_THRESHOLD,
+    EVENT_TRACKER_DUE,
+    STORAGE_KEY,
+    STORAGE_VERSION,
+)
 
 DEFAULT_ICON = "mdi:hammer-wrench"
 SLUG_REGEX = re.compile(r"^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$")
+LOGGER = logging.getLogger(__name__)
 
 
 def _utc_now_iso() -> str:
@@ -192,6 +199,69 @@ class TrackerStore:
             {"last_done": _validate_last_done(target_date)},
         )
 
+    async def async_process_due_notifications(
+        self, *, enabled: bool, notify_service: str | None = None
+    ) -> list[dict[str, Any]]:
+        """Fire due notifications once per due cycle."""
+        if not enabled:
+            return []
+
+        triggered: list[dict[str, Any]] = []
+        changed = False
+        for tracker in self.list_trackers():
+            if tracker["status"] != "due":
+                continue
+            current = self._find_tracker(tracker["id"])
+            if current.get("last_due_notification_date") == tracker["next_due_date"]:
+                continue
+            current["last_due_notification_date"] = tracker["next_due_date"]
+            current["last_due_notification_sent_at"] = _utc_now_iso()
+            changed = True
+            triggered.append(tracker)
+
+        if changed:
+            await self.async_save()
+
+        for tracker in triggered:
+            payload = {
+                "tracker_id": tracker["id"],
+                "slug": tracker["slug"],
+                "title": tracker["title"],
+                "category": tracker.get("category", ""),
+                "next_due_date": tracker["next_due_date"],
+                "status": tracker["status"],
+            }
+            self.hass.bus.async_fire(EVENT_TRACKER_DUE, payload)
+            if notify_service:
+                await self._async_send_due_notification(tracker, notify_service)
+
+        return triggered
+
+    async def _async_send_due_notification(
+        self, tracker: dict[str, Any], notify_service: str
+    ) -> None:
+        """Send an optional Home Assistant notify service call."""
+        domain, service = (
+            notify_service.split(".", 1)
+            if "." in notify_service
+            else ("notify", notify_service)
+        )
+        try:
+            await self.hass.services.async_call(
+                domain,
+                service,
+                {
+                    "title": "Maintenance Task Due",
+                    "message": f"{tracker['title']} is due today.",
+                    "data": {
+                        "tag": f"maintenance_tracker_{tracker['id']}_{tracker['next_due_date']}"
+                    },
+                },
+                blocking=True,
+            )
+        except Exception:
+            LOGGER.exception("Failed to send due notification via %s", notify_service)
+
     def _find_tracker(self, tracker_id: str) -> dict[str, Any]:
         normalized = tracker_id.strip().lower()
         for tracker in self._data["trackers"]:
@@ -239,6 +309,8 @@ class TrackerStore:
             "last_done": _validate_last_done(payload.get("last_done")),
             "notes": str(payload.get("notes", "") or "").strip(),
             "category": str(payload.get("category", "") or "").strip(),
+            "last_due_notification_date": payload.get("last_due_notification_date"),
+            "last_due_notification_sent_at": payload.get("last_due_notification_sent_at"),
             "created_at": payload.get("created_at") or now_iso,
             "updated_at": now_iso,
         }

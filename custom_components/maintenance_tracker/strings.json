@@ -17,6 +17,18 @@
       "single_instance_allowed": "Only one Maintenance Tracker instance is supported."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Maintenance Tracker options",
+        "description": "Configure due notification behavior.",
+        "data": {
+          "notify_on_due": "Send due notifications",
+          "notify_service": "Notify service (optional, for example notify.mobile_app_iphone)"
+        }
+      }
+    }
+  },
   "services": {
     "create_tracker": {
       "name": "Create tracker",
@@ -40,4 +52,3 @@
     }
   }
 }
-

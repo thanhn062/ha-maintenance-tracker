@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import voluptuous as vol
@@ -10,12 +11,17 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     CONF_DUE_SOON_THRESHOLD,
+    CONF_NOTIFY_ON_DUE,
+    CONF_NOTIFY_SERVICE,
     DEFAULT_DUE_SOON_THRESHOLD,
+    DEFAULT_NOTIFY_ON_DUE,
+    DEFAULT_NOTIFY_SERVICE,
     DOMAIN,
     EVENT_TRACKERS_UPDATED,
     SERVICE_CREATE_TRACKER,
@@ -29,7 +35,9 @@ from . import websocket_api
 
 DATA_STORE = "store"
 DATA_SERVICES_REGISTERED = "services_registered"
+DATA_DUE_CHECK_UNSUB = "due_check_unsub"
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+LOGGER = logging.getLogger(__name__)
 
 CREATE_SCHEMA = vol.Schema(
     {
@@ -87,11 +95,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ]
     )
     websocket_api.async_register(hass, store)
+    await _async_process_due_notifications(hass)
+
+    async def async_handle_due_check(now) -> None:
+        """Process due notifications on the daily schedule."""
+        del now
+        await _async_process_due_notifications(hass)
+
+    hass.data[DOMAIN][DATA_DUE_CHECK_UNSUB] = async_track_time_change(
+        hass,
+        async_handle_due_check,
+        hour=0,
+        minute=0,
+        second=5,
+    )
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
+    if unsub := hass.data.get(DOMAIN, {}).pop(DATA_DUE_CHECK_UNSUB, None):
+        unsub()
     hass.data.get(DOMAIN, {}).pop(DATA_STORE, None)
     return True
 
@@ -105,6 +129,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         store = _get_store(hass)
         tracker = await store.async_create_tracker(dict(call.data))
         _fire_updated(hass, "create", tracker["id"])
+        await _async_process_due_notifications(hass)
 
     async def async_handle_update(call: ServiceCall) -> None:
         store = _get_store(hass)
@@ -112,12 +137,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         tracker_id = data.pop("tracker_id")
         tracker = await store.async_update_tracker(tracker_id, data)
         _fire_updated(hass, "update", tracker["id"])
+        await _async_process_due_notifications(hass)
 
     async def async_handle_delete(call: ServiceCall) -> None:
         store = _get_store(hass)
         tracker_id = call.data["tracker_id"]
         await store.async_delete_tracker(tracker_id)
         _fire_updated(hass, "delete", tracker_id)
+        await _async_process_due_notifications(hass)
 
     async def async_handle_reset(call: ServiceCall) -> None:
         store = _get_store(hass)
@@ -125,11 +152,13 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             call.data["tracker_id"], call.data.get("date")
         )
         _fire_updated(hass, "reset", tracker["id"])
+        await _async_process_due_notifications(hass)
 
     async def async_handle_reload(call: ServiceCall) -> None:
         store = _get_store(hass)
         await store.async_reload()
         _fire_updated(hass, "reload", None)
+        await _async_process_due_notifications(hass)
 
     hass.services.async_register(
         DOMAIN,
@@ -186,4 +215,20 @@ def _fire_updated(hass: HomeAssistant, action: str, tracker_id: str | None) -> N
     hass.bus.async_fire(
         EVENT_TRACKERS_UPDATED,
         {"action": action, "tracker_id": tracker_id},
+    )
+async def _async_process_due_notifications(hass: HomeAssistant) -> None:
+    """Process due notifications using current entry options."""
+    store = hass.data.get(DOMAIN, {}).get(DATA_STORE)
+    if store is None:
+        return
+    entry = next(iter(hass.config_entries.async_entries(DOMAIN)), None)
+    if entry is None:
+        return
+    enabled = bool(entry.options.get(CONF_NOTIFY_ON_DUE, DEFAULT_NOTIFY_ON_DUE))
+    notify_service = str(
+        entry.options.get(CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE) or ""
+    ).strip()
+    await store.async_process_due_notifications(
+        enabled=enabled,
+        notify_service=notify_service or None,
     )
