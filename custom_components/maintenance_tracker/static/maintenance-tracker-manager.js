@@ -658,8 +658,8 @@ class MaintenanceTrackerManager extends HTMLElement {
               <div class="tracker-state-chip">${urgency.label}</div>
             </div>
             <div class="tracker-meta">
-              <span>Age ${ageDays} day${ageDays === 1 ? "" : "s"}</span>
-              <span>Lifespan ${lifespanDays} day${lifespanDays === 1 ? "" : "s"}</span>
+              <span>Age: ${ageDays} day${ageDays === 1 ? "" : "s"}</span>
+              <span>Lifespan: ${lifespanDays} day${lifespanDays === 1 ? "" : "s"}</span>
             </div>
           </div>
         </div>
