@@ -36,6 +36,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._allIconsPromise = null;
     this._compactResetArmedId = null;
     this._managerResetArmedId = null;
+    this._managerDeleteArmedId = null;
     this._badgeResetArmedId = null;
     this._eventUnsubscribe = null;
     this._subscribedHass = null;
@@ -655,7 +656,6 @@ class MaintenanceTrackerManager extends HTMLElement {
   }
 
   async _deleteTracker(tracker) {
-    if (!confirm(`Delete tracker "${tracker.title}"?`)) return;
     try {
       await this._hass.callService("maintenance_tracker", "delete_tracker", {
         tracker_id: tracker.id,
@@ -690,6 +690,10 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._managerResetArmedId = null;
   }
 
+  _clearManagerDeleteArm() {
+    this._managerDeleteArmedId = null;
+  }
+
   _clearBadgeResetArm() {
     this._badgeResetArmedId = null;
   }
@@ -698,6 +702,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     if (
       !this._compactResetArmedId &&
       !this._managerResetArmedId &&
+      !this._managerDeleteArmedId &&
       !this._badgeResetArmedId
     ) {
       return;
@@ -708,6 +713,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     }
     this._clearCompactResetArm();
     this._clearManagerResetArm();
+    this._clearManagerDeleteArm();
     this._clearBadgeResetArm();
     this._render();
   }
@@ -739,6 +745,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         ? "Due today"
         : this._summaryText(tracker).replace(/^in /, "In ");
     const isManagerResetArmed = this._managerResetArmedId === tracker.id;
+    const isManagerDeleteArmed = this._managerDeleteArmedId === tracker.id;
     return `
       <div class="tracker-card" style="--tracker-color:${color};--tracker-accent:${accent};">
         <div class="tracker-top">
@@ -771,7 +778,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         <div class="tracker-actions">
           <button class="action ${isManagerResetArmed ? "action-danger" : "action-primary"}" data-action="reset" data-id="${tracker.id}">${isManagerResetArmed ? "Confirm" : "Reset"}</button>
           <button class="action" data-action="edit" data-id="${tracker.id}">Edit</button>
-          <button class="action action-danger" data-action="delete" data-id="${tracker.id}">Delete</button>
+          <button class="action ${isManagerDeleteArmed ? "action-danger" : ""}" data-action="delete" data-id="${tracker.id}">${isManagerDeleteArmed ? "Confirm" : "Delete"}</button>
         </div>
       </div>
     `;
@@ -1656,6 +1663,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this.shadowRoot.getElementById("add-tracker")?.addEventListener("click", () => {
       this._clearCompactResetArm();
       this._clearManagerResetArm();
+      this._clearManagerDeleteArm();
       this._clearBadgeResetArm();
       this._openDialog("create");
     });
@@ -1672,6 +1680,13 @@ class MaintenanceTrackerManager extends HTMLElement {
         const armedButton = event.target.closest?.(`[data-action="reset"][data-id="${this._managerResetArmedId}"]`);
         if (!armedButton) {
           this._clearManagerResetArm();
+          changed = true;
+        }
+      }
+      if (this._managerDeleteArmedId) {
+        const armedButton = event.target.closest?.(`[data-action="delete"][data-id="${this._managerDeleteArmedId}"]`);
+        if (!armedButton) {
+          this._clearManagerDeleteArm();
           changed = true;
         }
       }
@@ -1693,9 +1708,23 @@ class MaintenanceTrackerManager extends HTMLElement {
         const tracker = this._trackers.find((item) => item.id === button.dataset.id);
         if (!tracker) return;
         const action = button.dataset.action;
-        if (action === "edit") this._openDialog("edit", tracker);
-        if (action === "delete") this._deleteTracker(tracker);
+        if (action === "edit") {
+          this._clearManagerDeleteArm();
+          this._openDialog("edit", tracker);
+        }
+        if (action === "delete") {
+          this._clearManagerResetArm();
+          if (this._managerDeleteArmedId === tracker.id) {
+            this._managerDeleteArmedId = null;
+            this._deleteTracker(tracker);
+            return;
+          }
+          this._managerDeleteArmedId = tracker.id;
+          this._render();
+          return;
+        }
         if (action === "reset") {
+          this._clearManagerDeleteArm();
           if (this._managerResetArmedId === tracker.id) {
             this._managerResetArmedId = null;
             this._resetTracker(tracker);
@@ -1709,6 +1738,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-compact-id]").forEach((button) => {
       button.addEventListener("click", () => {
         this._clearManagerResetArm();
+        this._clearManagerDeleteArm();
         this._clearBadgeResetArm();
         const tracker = this._trackers.find((item) => item.id === button.dataset.compactId);
         if (!tracker) return;
@@ -1719,6 +1749,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       button.addEventListener("click", async () => {
         this._clearCompactResetArm();
         this._clearManagerResetArm();
+        this._clearManagerDeleteArm();
         const tracker = this._trackers.find((item) => item.id === button.dataset.badgeId);
         if (!tracker) return;
         if (this._badgeResetArmedId === tracker.id) {
@@ -1734,6 +1765,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       button.addEventListener("click", () => {
         this._clearCompactResetArm();
         this._clearManagerResetArm();
+        this._clearManagerDeleteArm();
         this._clearBadgeResetArm();
         this._closeDialog();
       });
