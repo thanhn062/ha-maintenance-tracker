@@ -1987,10 +1987,29 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     );
   }
 
+  _notifyHourParts() {
+    const rawHour = Number(this._settings?.notify_hour ?? 7);
+    const hour24 = Number.isFinite(rawHour) ? Math.max(0, Math.min(23, rawHour)) : 7;
+    const meridiem = hour24 >= 12 ? "PM" : "AM";
+    const hour12 = hour24 % 12 || 12;
+    return { hour12, meridiem };
+  }
+
+  _updateNotifyTime({ hour12, meridiem }) {
+    const normalizedHour12 = Math.max(1, Math.min(12, Number(hour12) || 12));
+    const normalizedMeridiem = meridiem === "PM" ? "PM" : "AM";
+    const hour24 =
+      normalizedMeridiem === "PM"
+        ? (normalizedHour12 % 12) + 12
+        : normalizedHour12 % 12;
+    this._updateSettings({ notify_hour: hour24 });
+  }
+
   _render() {
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
     const selected = new Set((this._config?.selected_trackers || []).map((item) => `${item}`));
     const mode = this._config?.mode || "manager";
+    const notifyTime = this._notifyHourParts();
     this.shadowRoot.innerHTML = `
       <style>
         :host { display: block; padding: 8px 0; }
@@ -2029,6 +2048,12 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
         .option-grid {
           display: grid;
           gap: 8px;
+        }
+        .inline-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 120px;
+          gap: 8px;
+          align-items: end;
         }
         .help {
           font-size: 0.82rem;
@@ -2071,10 +2096,19 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
               <span>Send due notifications</span>
             </label>
           </div>
-          <label>
-            Notify hour
-            <input id="notify-hour" type="number" min="0" max="23" value="${Number(this._settings?.notify_hour ?? 7)}" />
-          </label>
+          <div class="inline-grid">
+            <label>
+              Notify hour
+              <input id="notify-hour" type="number" min="1" max="12" value="${notifyTime.hour12}" />
+            </label>
+            <label>
+              AM / PM
+              <select id="notify-meridiem">
+                <option value="AM" ${notifyTime.meridiem === "AM" ? "selected" : ""}>AM</option>
+                <option value="PM" ${notifyTime.meridiem === "PM" ? "selected" : ""}>PM</option>
+              </select>
+            </label>
+          </div>
           ${this._settingsSaving ? `<div class="help">Saving notification settings...</div>` : ""}
         </div>
         <div class="picker">
@@ -2141,7 +2175,12 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       this._updateSettings({ notify_on_due: event.target.checked });
     });
     this.shadowRoot.getElementById("notify-hour").addEventListener("change", (event) => {
-      this._updateSettings({ notify_hour: Number(event.target.value || 0) });
+      const meridiem = this.shadowRoot.getElementById("notify-meridiem")?.value || "AM";
+      this._updateNotifyTime({ hour12: event.target.value, meridiem });
+    });
+    this.shadowRoot.getElementById("notify-meridiem").addEventListener("change", (event) => {
+      const hour12 = this.shadowRoot.getElementById("notify-hour")?.value || notifyTime.hour12;
+      this._updateNotifyTime({ hour12, meridiem: event.target.value });
     });
     this.shadowRoot.getElementById("compact-show-names").addEventListener("change", (event) => {
       this._emitConfig({ compact_show_names: event.target.checked });
