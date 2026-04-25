@@ -1,5 +1,9 @@
 # Maintenance Tracker
 
+<p align="center">
+  <img src=".github/images/integration-logo.jpg" alt="Maintenance Tracker" width="180">
+</p>
+
 [![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg?style=for-the-badge)](https://github.com/thanhn062/ha-maintenance-tracker/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg?style=for-the-badge)](https://github.com/thanhn062/ha-maintenance-tracker/blob/main/LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.8.0-blue.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io/)
