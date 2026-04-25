@@ -2075,7 +2075,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
             Notify hour
             <input id="notify-hour" type="number" min="0" max="23" value="${Number(this._settings?.notify_hour ?? 7)}" />
           </label>
-          <div class="help">${this._settingsSaving ? "Saving notification settings..." : "Backend-owned setting shared across all tracker cards."}</div>
+          ${this._settingsSaving ? `<div class="help">Saving notification settings...</div>` : ""}
         </div>
         <div class="picker">
           <div class="picker-title">Compact display options</div>
