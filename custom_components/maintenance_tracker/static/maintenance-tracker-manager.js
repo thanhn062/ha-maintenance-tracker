@@ -401,7 +401,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           title: "",
           slug: "",
           icon: "mdi:hammer-wrench",
-          lifespan_days: 14,
+          lifespan_days: 7,
           last_done: localToday,
           notes: "",
           category: "",
@@ -535,7 +535,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     const categoryInput = this.shadowRoot.querySelector('input[name="category"]');
     const notesInput = this.shadowRoot.querySelector('textarea[name="notes"]');
     if (titleInput) this._dialog.tracker.title = titleInput.value;
-    if (lifespanInput) this._dialog.tracker.lifespan_days = Number(lifespanInput.value || 14);
+    if (lifespanInput) this._dialog.tracker.lifespan_days = Number(lifespanInput.value || 7);
     if (lastDoneInput) this._dialog.tracker.last_done = lastDoneInput.value;
     if (categoryInput) this._dialog.tracker.category = categoryInput.value;
     if (notesInput) this._dialog.tracker.notes = notesInput.value;
@@ -873,7 +873,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       0,
       Math.min(
         1,
-        Number((tracker.days_since_done || 0) / Math.max(Number(tracker.lifespan_days || 14), 1))
+        Number((tracker.days_since_done || 0) / Math.max(Number(tracker.lifespan_days || 7), 1))
       )
     );
     const previewCircumference = 2 * Math.PI * 32;
@@ -954,7 +954,7 @@ class MaintenanceTrackerManager extends HTMLElement {
                 </div>
               ` : ""}
             </div>
-            <label>Lifespan days<input name="lifespan_days" type="number" min="1" value="${tracker.lifespan_days || 14}" required /></label>
+            <label>Lifespan days<input name="lifespan_days" type="number" min="1" value="${tracker.lifespan_days || 7}" required /></label>
             <label>Last done<input name="last_done" type="date" value="${tracker.last_done || ""}" required /></label>
             <label>Category<input name="category" value="${tracker.category || ""}" /></label>
             <label>Notes<textarea name="notes" rows="3">${tracker.notes || ""}</textarea></label>
@@ -1829,7 +1829,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._bindDialogFieldFocus(lifespanInput, { preventEnterSubmit: true });
     lifespanInput?.addEventListener("input", () => {
       if (this._dialog) {
-        this._dialog.tracker.lifespan_days = Number(lifespanInput.value || 14);
+        this._dialog.tracker.lifespan_days = Number(lifespanInput.value || 7);
       }
     });
     const lastDoneInput = this.shadowRoot.querySelector('input[name="last_done"]');
