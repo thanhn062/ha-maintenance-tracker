@@ -409,7 +409,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._dialog = {
       mode,
       tracker: trackerState,
-      iconQuery: this._iconLabel(trackerState.icon || "mdi:hammer-wrench"),
+      iconQuery: tracker ? this._iconLabel(trackerState.icon || "mdi:hammer-wrench") : "",
       iconPickerOpen: false,
       iconPickerMode: "common",
       allIconsLoading: false,
