@@ -5,9 +5,9 @@
   "codeowners": ["@thanhn062"],
   "config_flow": true,
   "documentation": "https://github.com/thanhn062/ha-maintenance-tracker#readme",
-  "issue_tracker": "https://github.com/thanhn062/ha-maintenance-tracker/issues",
   "integration_type": "service",
   "iot_class": "local_push",
+  "issue_tracker": "https://github.com/thanhn062/ha-maintenance-tracker/issues",
   "requirements": [],
   "single_config_entry": true,
   "version": "0.1.0"
