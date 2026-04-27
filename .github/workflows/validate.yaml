@@ -3,10 +3,22 @@ name: Validate
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
-  validate:
+  validate-hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: HACS validation
+        uses: hacs/action@main
+        with:
+          category: integration
+
+  validate-syntax:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,4 +32,3 @@ jobs:
         run: node --check custom_components/maintenance_tracker/static/maintenance-tracker-manager.js
       - name: Check Python syntax
         run: python -m py_compile custom_components/maintenance_tracker/*.py
-
