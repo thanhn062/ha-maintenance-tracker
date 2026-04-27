@@ -1,7 +1,7 @@
 # Maintenance Tracker
 
 <p align="center">
-  <img src=".github/images/integration-logo.png" alt="Maintenance Tracker" width="180">
+  <img src=".github/images/maintenance-tracker-readme-tile.png" alt="Maintenance Tracker" width="180">
 </p>
 
 [![Release](https://img.shields.io/github/v/release/thanhn062/ha-maintenance-tracker?style=for-the-badge)](https://github.com/thanhn062/ha-maintenance-tracker/releases)
