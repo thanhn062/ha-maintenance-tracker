@@ -64,4 +64,4 @@ Until it is included in the default HACS catalog, add this repository as a custo
 
 ## Disclaimer
 
-This project was built with Codex, with me acting as the project manager overseeing the full process and each iteration along the way.
+This project was built with Codex, with me serving as project manager and overseeing the direction, review, and iteration process throughout.
