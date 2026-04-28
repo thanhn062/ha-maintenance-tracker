@@ -52,7 +52,8 @@ For the best experience, I recommend placing the Manager card inside a Bubble Ca
 <img width="500" height="auto" alt="card content" src="https://github.com/user-attachments/assets/e9b04c80-3dd9-4c96-b298-d180474c9e8c" />
 
 ### Demo
-https://github.com/user-attachments/assets/9936e92f-b20c-4da2-8912-710437f8172f
+
+https://github.com/user-attachments/assets/1e7b41bd-5b1f-4424-b1e9-911101bfcca4
 
 ## Credits
 
