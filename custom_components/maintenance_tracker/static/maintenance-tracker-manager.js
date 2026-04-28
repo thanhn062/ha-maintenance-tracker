@@ -9,7 +9,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       mode: "manager",
       compact_count: 8,
       visibility_due_days: 3,
-      visibility_overdue_days: 10,
+      visibility_overdue_days: 14,
       selected_trackers: [],
       compact_show_names: true,
       compact_show_age_lifespan: true,
@@ -362,7 +362,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       : [...this._trackers];
     if (this._config.mode === "compact" || this._config.mode === "badge") {
       const dueDays = Math.max(0, Number(this._config.visibility_due_days ?? 3));
-      const overdueDays = Math.max(0, Number(this._config.visibility_overdue_days ?? 10));
+      const overdueDays = Math.max(0, Number(this._config.visibility_overdue_days ?? 14));
       const filtered = visible.filter((tracker) => {
         const trackerOverdueDays = Math.max(0, Number(tracker.days_overdue || 0));
         if (trackerOverdueDays > 0) return trackerOverdueDays <= overdueDays;
@@ -1954,7 +1954,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       mode: "manager",
       compact_count: 8,
       visibility_due_days: 3,
-      visibility_overdue_days: 10,
+      visibility_overdue_days: 14,
       selected_trackers: [],
       compact_show_names: true,
       compact_show_age_lifespan: true,
@@ -2117,7 +2117,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
           </label>
           <label>
             Show while overdue up to days
-            <input id="visibility-overdue-days" type="number" min="0" max="3650" value="${Number(this._config?.visibility_overdue_days ?? 10)}" />
+            <input id="visibility-overdue-days" type="number" min="0" max="3650" value="${Number(this._config?.visibility_overdue_days ?? 14)}" />
           </label>
         </div>
         <div class="picker">
