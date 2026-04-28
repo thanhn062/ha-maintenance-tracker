@@ -22,9 +22,7 @@ The core idea is simple: keep track of recurring maintenance tasks that need att
 
 For the past 6 years, I have been using a Scriptable-based version of this idea as an iPhone home screen widget through my old project, [HowManyDaysSince](https://github.com/thanhn062/HowManyDaysSince). Over time, I noticed that it slowly started to become a kind of "home screen noise" instead of a genuinely helpful reminder surface.
 
-That is what pushed me to bring the idea into Home Assistant in a way that feels simpler, more practical, and easier to live with day to day. By adding visibility controls and notifications for due tasks, the goal is to reduce friction, make reminders feel more intentional, and encourage people to actually keep up with these recurring tasks.
-
-I wanted to bring that idea into Home Assistant in a way that feels simple, practical, and easy to live with day to day. There have been other takes on this kind of reminder tracker, but this version is built around a more intuitive and low-friction user experience.
+That is what pushed me to bring the idea into Home Assistant in a way that feels simple, practical, and easy to live with day to day. There have been other takes on this kind of reminder tracker, but this version is built around a more intuitive and low-friction user experience. By adding visibility controls and notifications for due tasks, the goal is to reduce friction, make reminders feel more intentional, and encourage people to actually keep up with these recurring tasks.
 
 ## Features
 
