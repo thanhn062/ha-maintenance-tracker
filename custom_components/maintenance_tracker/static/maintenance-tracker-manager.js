@@ -75,7 +75,10 @@ class MaintenanceTrackerManager extends HTMLElement {
       "mdi:leaf",
       "mdi:water",
       "mdi:home-heart",
-      "mdi:broom"
+      "mdi:broom",
+      "mdi:car",
+      "mdi:car-cog",
+      "mdi:car-wrench"
     ];
   }
 
@@ -111,6 +114,9 @@ class MaintenanceTrackerManager extends HTMLElement {
       "mdi:water": ["humidifier", "water", "tank", "refill"],
       "mdi:home-heart": ["home", "house", "care"],
       "mdi:broom": ["sweep", "sweeping", "clean", "cleaning", "floor"],
+      "mdi:car": ["vehicle", "auto", "automobile", "sedan"],
+      "mdi:car-cog": ["vehicle", "auto", "maintenance", "service", "repair"],
+      "mdi:car-wrench": ["vehicle", "auto", "maintenance", "service", "repair", "fix"],
     };
   }
 
@@ -166,6 +172,16 @@ class MaintenanceTrackerManager extends HTMLElement {
           "mdi:air-purifier",
           "mdi:lightbulb",
           "mdi:ceiling-light",
+        ],
+      },
+      {
+        label: "Vehicle",
+        icons: [
+          "mdi:car",
+          "mdi:car-cog",
+          "mdi:car-wrench",
+          "mdi:car-brake-fluid-level",
+          "mdi:car-coolant-level",
         ],
       },
       {
@@ -498,6 +514,10 @@ class MaintenanceTrackerManager extends HTMLElement {
     return [label, slug, compact, ...aliases.map((alias) => this._normalizeIconQuery(alias))];
   }
 
+  _iconSearchWords(term) {
+    return `${term || ""}`.split(/\s+/).filter(Boolean);
+  }
+
   _fuzzyMatches(term, token) {
     if (!token) return true;
     if (!term) return false;
@@ -510,20 +530,66 @@ class MaintenanceTrackerManager extends HTMLElement {
     return false;
   }
 
-  _matchesIconQuery(icon, query) {
+  _matchTermScore(term, token) {
+    if (!term || !token) return null;
+    const words = this._iconSearchWords(term);
+    if (term === token) return 0;
+    if (words.includes(token)) return 1;
+    if (term.startsWith(token)) return 2;
+    if (words.some((word) => word.startsWith(token))) return 3;
+    if (term.includes(token)) return 4;
+    if (token.length >= 3 && this._fuzzyMatches(term, token)) return 6;
+    return null;
+  }
+
+  _iconQueryScore(icon, query) {
     const cleaned = this._normalizeIconQuery(query);
-    if (!cleaned) return true;
+    if (!cleaned) return 0;
     const tokens = cleaned.split(/\s+/).filter(Boolean);
     const terms = this._iconSearchTerms(icon);
-    return tokens.every((token) => terms.some((term) => this._fuzzyMatches(term, token)));
+    const label = this._iconLabel(icon);
+    const labelWords = this._iconSearchWords(label);
+    let score = 0;
+
+    for (const token of tokens) {
+      let best = null;
+      for (const term of terms) {
+        const termScore = this._matchTermScore(term, token);
+        if (termScore == null) continue;
+        if (best == null || termScore < best) best = termScore;
+      }
+      if (best == null) return null;
+      score += best * 100;
+    }
+
+    if (label === cleaned) score -= 60;
+    else if (labelWords.join(" ") === cleaned) score -= 40;
+    else if (label.startsWith(cleaned)) score -= 20;
+    else if (labelWords.some((word) => word.startsWith(cleaned))) score -= 10;
+
+    score += labelWords.length;
+    score += label.length / 100;
+    return score;
+  }
+
+  _matchesIconQuery(icon, query) {
+    return this._iconQueryScore(icon, query) != null;
   }
 
   _allIconMatches(query) {
     const icons = Array.isArray(this._allIconOptions) && this._allIconOptions.length
       ? this._allIconOptions
       : MaintenanceTrackerManager.ICON_OPTIONS;
-    const matches = icons.filter((icon) => this._matchesIconQuery(icon, query));
-    if (this._normalizeIconQuery(query)) {
+    const cleaned = this._normalizeIconQuery(query);
+    const matches = icons
+      .map((icon, index) => ({ icon, index, score: this._iconQueryScore(icon, cleaned) }))
+      .filter((entry) => entry.score != null)
+      .sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        return a.index - b.index;
+      })
+      .map((entry) => entry.icon);
+    if (cleaned) {
       return matches.slice(0, 240);
     }
     return matches.slice(0, 160);
@@ -602,7 +668,14 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   _filteredIcons(query) {
     const icons = MaintenanceTrackerManager.ICON_OPTIONS;
-    return icons.filter((icon) => this._matchesIconQuery(icon, query));
+    return icons
+      .map((icon, index) => ({ icon, index, score: this._iconQueryScore(icon, query) }))
+      .filter((entry) => entry.score != null)
+      .sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        return a.index - b.index;
+      })
+      .map((entry) => entry.icon);
   }
 
   _groupedIcons(query) {
