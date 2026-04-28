@@ -1070,6 +1070,10 @@ class MaintenanceTrackerManager extends HTMLElement {
       <style>
         :host {
           display: block;
+          --mt-compact-track-strong: color-mix(in srgb, var(--primary-background-color, var(--card-background-color, #ffffff)) 82%, var(--primary-text-color, #111111) 18%);
+          --mt-compact-center-strong: color-mix(in srgb, var(--primary-background-color, var(--card-background-color, #ffffff)) 88%, var(--primary-text-color, #111111) 12%);
+          --mt-compact-track-soft: color-mix(in srgb, var(--primary-text-color, #111111) 12%, transparent);
+          --mt-compact-center-soft: color-mix(in srgb, var(--primary-text-color, #111111) 18%, transparent);
           --mt-surface-base: var(--ha-card-background, var(--card-background-color, #ffffff));
           --mt-surface-subtle: var(--secondary-background-color, var(--card-background-color, #f6f8fb));
           --mt-surface-raised: var(--primary-background-color, var(--ha-card-background, var(--card-background-color, #ffffff)));
@@ -1188,12 +1192,12 @@ class MaintenanceTrackerManager extends HTMLElement {
           border-radius: 999px;
         }
         .compact-dial-wrap-solid {
-          --compact-dial-track-bg: rgba(52, 58, 68, 0.88);
-          --compact-dial-center-bg: rgba(18, 22, 28, 0.94);
+          --compact-dial-track-bg: var(--mt-compact-track-strong);
+          --compact-dial-center-bg: var(--mt-compact-center-strong);
         }
         .compact-dial-wrap-transparent {
-          --compact-dial-track-bg: rgba(18, 22, 28, 0.22);
-          --compact-dial-center-bg: rgba(18, 22, 28, 0.42);
+          --compact-dial-track-bg: var(--mt-compact-track-soft);
+          --compact-dial-center-bg: var(--mt-compact-center-soft);
         }
         .compact-dial {
           width: 60px;
@@ -1201,7 +1205,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           transform: rotate(-90deg);
         }
         .compact-dial .dial-bg {
-          stroke: var(--compact-dial-track-bg, rgba(18, 22, 28, 0.36));
+          stroke: var(--compact-dial-track-bg, var(--mt-compact-track-soft));
         }
         .compact-dial-center {
           position: absolute;
@@ -1214,7 +1218,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           width: 36px;
           height: 36px;
           border-radius: 999px;
-          background: var(--compact-dial-center-bg, rgba(18, 22, 28, 0.88));
+          background: var(--compact-dial-center-bg, var(--mt-compact-center-strong));
           display: flex;
           align-items: center;
           justify-content: center;
