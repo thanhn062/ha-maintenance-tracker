@@ -75,6 +75,29 @@ Default HACS inclusion is still pending, so add this repository as a custom repo
 2. Repository: `https://github.com/thanhn062/ha-maintenance-tracker`
 3. Category: `Integration`
 
+## Quick Start
+
+After HACS downloads the repository, there are still two more steps:
+
+1. Go to `Settings` -> `Devices & Services` -> `Add Integration`
+2. Search for `Maintenance Tracker`
+3. Finish adding the integration
+
+Once the integration is installed:
+
+1. Open any dashboard and choose `Edit Dashboard`
+2. Add a card
+3. Search for `Maintenance Tracker Manager`
+4. If it does not appear right away, use a `Manual` card with:
+
+```yaml
+type: custom:maintenance-tracker-manager
+```
+
+From there, open the card and press `Add tracker` to create your first maintenance task.
+
+If the card picker still does not show the card after installation, refresh Home Assistant once and try again.
+
 ## Disclaimer
 
 This project was built with Codex, with me serving as project manager and overseeing the direction, review, and iteration process throughout.
