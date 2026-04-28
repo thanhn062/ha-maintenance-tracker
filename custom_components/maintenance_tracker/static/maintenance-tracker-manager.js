@@ -16,7 +16,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       compact_show_summary: true,
       compact_show_urgency: false,
       compact_show_tile_background: true,
-      compact_show_dial_background: true,
+      compact_show_dial_background: false,
     };
   }
 
@@ -190,7 +190,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       compact_show_summary: true,
       compact_show_urgency: false,
       compact_show_tile_background: true,
-      compact_show_dial_background: true,
+      compact_show_dial_background: false,
       ...config,
     };
     this._render();
@@ -1961,7 +1961,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       compact_show_summary: true,
       compact_show_urgency: false,
       compact_show_tile_background: true,
-      compact_show_dial_background: true,
+      compact_show_dial_background: false,
       ...config,
     };
     this._render();
