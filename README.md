@@ -47,6 +47,12 @@ This integration was designed to feel as close to “set it and forget it” as 
 4. Repeat
 
 For the best experience, I recommend placing the Manager card inside a Bubble Card pop-up.
+## Media
+### Card content
+<img width="500" height="auto" alt="card content" src="https://github.com/user-attachments/assets/e9b04c80-3dd9-4c96-b298-d180474c9e8c" />
+
+### Demo
+https://github.com/user-attachments/assets/9936e92f-b20c-4da2-8912-710437f8172f
 
 ## Credits
 
