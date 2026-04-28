@@ -61,3 +61,7 @@ Until it is included in the default HACS catalog, add this repository as a custo
 1. HACS -> top-right menu -> `Custom repositories`
 2. Repository: `https://github.com/thanhn062/ha-maintenance-tracker`
 3. Category: `Integration`
+
+## Disclaimer
+
+This project was built with Codex, with me acting as the project manager overseeing the full process and each iteration along the way.
