@@ -1050,15 +1050,13 @@ class MaintenanceTrackerManager extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 28px;
-          height: 28px;
-          border-radius: 999px;
-          background: var(--badge-accent-bg);
+          width: 32px;
+          height: 32px;
           color: var(--badge-accent);
           flex: 0 0 auto;
         }
         .badge-icon ha-icon {
-          --mdc-icon-size: 18px;
+          --mdc-icon-size: 22px;
         }
         .badge-copy {
           display: grid;
@@ -1591,11 +1589,11 @@ class MaintenanceTrackerManager extends HTMLElement {
             gap: 7px;
           }
           .badge-icon {
-            width: 26px;
-            height: 26px;
+            width: 30px;
+            height: 30px;
           }
           .badge-icon ha-icon {
-            --mdc-icon-size: 17px;
+            --mdc-icon-size: 21px;
           }
           .badge-title {
             font-size: 0.8rem;
