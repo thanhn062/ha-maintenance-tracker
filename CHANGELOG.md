@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-04-28
+
+### Changed
+- Refined the README motivation and project background copy.
+
+### Fixed
+- Significantly improved icon search relevance in task creation.
+- Prioritized exact, word, and prefix matches before loose fuzzy matches so searches like `car` surface actual vehicle icons instead of unrelated `account-*` results.
+- Added clearer vehicle-oriented icon suggestions and aliases for common maintenance use cases.
+
 ## [0.1.1] - 2026-04-28
 
 ### Added
