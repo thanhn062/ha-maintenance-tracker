@@ -13,6 +13,8 @@
 [![Hassfest](https://img.shields.io/github/actions/workflow/status/thanhn062/ha-maintenance-tracker/hassfest.yaml?branch=main&style=for-the-badge&label=hassfest)](https://github.com/thanhn062/ha-maintenance-tracker/actions/workflows/hassfest.yaml)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/thanhnatos)
 
+Default HACS inclusion is still pending. For now, install it as a custom repository.
+
 Maintenance Tracker is a lightweight productivity integration for Home Assistant.
 
 It is a modern revival of an older project I built about 6 years ago:
@@ -67,7 +69,7 @@ Thanks to its creator for the inspiration.
 
 ## HACS Install
 
-Until it is included in the default HACS catalog, add this repository as a custom repository in HACS:
+Default HACS inclusion is still pending, so add this repository as a custom repository in HACS:
 
 1. HACS -> top-right menu -> `Custom repositories`
 2. Repository: `https://github.com/thanhn062/ha-maintenance-tracker`

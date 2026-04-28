@@ -1071,7 +1071,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         :host {
           display: block;
           --mt-compact-track-strong: color-mix(in srgb, var(--primary-background-color, var(--card-background-color, #ffffff)) 82%, var(--primary-text-color, #111111) 18%);
-          --mt-compact-center-strong: color-mix(in srgb, var(--primary-background-color, var(--card-background-color, #ffffff)) 88%, var(--primary-text-color, #111111) 12%);
+          --mt-compact-center-strong: var(--ha-card-background, var(--card-background-color, #ffffff));
           --mt-compact-track-soft: color-mix(in srgb, var(--primary-text-color, #111111) 12%, transparent);
           --mt-compact-center-soft: color-mix(in srgb, var(--primary-text-color, #111111) 18%, transparent);
           --mt-surface-base: var(--ha-card-background, var(--card-background-color, #ffffff));
