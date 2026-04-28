@@ -17,6 +17,11 @@ Default HACS inclusion is still pending. For now, install it as a custom reposit
 
 Maintenance Tracker is a lightweight productivity integration for Home Assistant.
 
+The standard long-term install path is now split:
+
+- backend integration repo: this repository
+- dashboard card repo: [lovelace-maintenance-tracker-manager](https://github.com/thanhn062/lovelace-maintenance-tracker-manager)
+
 It is a modern revival of an older project I built about 6 years ago:
 [HowManyDaysSince](https://github.com/thanhn062/HowManyDaysSince)
 
@@ -75,9 +80,15 @@ Default HACS inclusion is still pending, so add this repository as a custom repo
 2. Repository: `https://github.com/thanhn062/ha-maintenance-tracker`
 3. Category: `Integration`
 
+For the dashboard card, also add:
+
+1. HACS -> top-right menu -> `Custom repositories`
+2. Repository: `https://github.com/thanhn062/lovelace-maintenance-tracker-manager`
+3. Category: `Dashboard`
+
 ## Quick Start
 
-After HACS downloads the repository, there are still two more steps:
+After HACS downloads the backend integration and dashboard card repositories, there are still two more steps:
 
 1. Go to `Settings` -> `Devices & Services` -> `Add Integration`
 2. Search for `Maintenance Tracker`
@@ -88,15 +99,14 @@ Once the integration is installed:
 1. Open any dashboard and choose `Edit Dashboard`
 2. Add a card
 3. Search for `Maintenance Tracker Manager`
-4. If it does not appear right away, use a `Manual` card with:
+4. If it does not appear right away, refresh or reopen Home Assistant once so the new dashboard resource is loaded
+5. If it still does not appear, use a `Manual` card with:
 
 ```yaml
 type: custom:maintenance-tracker-manager
 ```
 
 From there, open the card and press `Add tracker` to create your first maintenance task.
-
-If the card picker still does not show the card after installation, refresh Home Assistant once and try again.
 
 ## Disclaimer
 
