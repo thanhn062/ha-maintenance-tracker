@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-04-28
+
+### Changed
+- Clarified the README install flow with a proper quick-start section covering HACS install, integration setup, dashboard card creation, and the manual card fallback.
+- Removed the unused `Card title` option from the Lovelace card editor.
+
+### Fixed
+- Updated the add/edit tracker dialog to honor Home Assistant light and dark themes instead of using hardcoded dark surfaces.
+- Updated compact mode to honor Home Assistant light and dark themes for the dial surfaces and inner circle.
+- Refined the compact inner circle surface so light themes render a clean white center instead of a gray cast.
+
 ## [0.1.2] - 2026-04-28
 
 ### Changed
