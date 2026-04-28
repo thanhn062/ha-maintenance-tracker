@@ -7,7 +7,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     return {
       title: "Maintenance Tracker",
       mode: "manager",
-      compact_count: 4,
+      compact_count: 8,
       visibility_due_days: 3,
       visibility_overdue_days: 10,
       selected_trackers: [],
@@ -183,7 +183,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._config = {
       title: "Maintenance Tracker",
       mode: "manager",
-      compact_count: 4,
+      compact_count: 8,
       selected_trackers: [],
       compact_show_names: true,
       compact_show_percentage: true,
@@ -367,7 +367,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         const daysRemaining = Math.max(0, Number(tracker.days_remaining || 0));
         return daysRemaining <= dueDays;
       });
-      const compactCount = Math.max(1, Math.min(Number(this._config.compact_count || 4), 8));
+      const compactCount = Math.max(1, Math.min(Number(this._config.compact_count || 8), 8));
       return filtered.slice(0, compactCount);
     }
     return visible;
@@ -1952,7 +1952,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     this._config = {
       title: "Maintenance Tracker",
       mode: "manager",
-      compact_count: 4,
+      compact_count: 8,
       visibility_due_days: 3,
       visibility_overdue_days: 10,
       selected_trackers: [],
@@ -2107,7 +2107,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
         </label>
         <label>
           Display item count
-          <input id="compact-count" type="number" min="1" max="8" value="${Number(this._config?.compact_count || 4)}" />
+          <input id="compact-count" type="number" min="1" max="8" value="${Number(this._config?.compact_count || 8)}" />
         </label>
         <div class="picker">
           <div class="picker-title">Visibility</div>
