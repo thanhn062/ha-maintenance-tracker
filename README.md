@@ -5,6 +5,7 @@
 </p>
 
 [![Release](https://img.shields.io/github/v/release/thanhn062/ha-maintenance-tracker?style=for-the-badge)](https://github.com/thanhn062/ha-maintenance-tracker/releases)
+[![Downloads](https://img.shields.io/github/downloads/thanhn062/ha-maintenance-tracker/total?style=for-the-badge)](https://github.com/thanhn062/ha-maintenance-tracker/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg?style=for-the-badge)](https://github.com/thanhn062/ha-maintenance-tracker/blob/main/LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.8.0-blue.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io/)
 [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://www.hacs.xyz/docs/faq/custom_repositories/)
