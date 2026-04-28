@@ -77,19 +77,19 @@ Default HACS inclusion is still pending, so add this repository as a custom repo
 
 ## Quick Start
 
-After HACS downloads the repository, there are still two more steps:
+After HACS downloads the repository:
 
 1. Go to `Settings` -> `Devices & Services` -> `Add Integration`
 2. Search for `Maintenance Tracker`
 3. Finish adding the integration
+4. Restart Home Assistant once so the card resource is loaded
 
-Once the integration is installed:
+After Home Assistant restarts:
 
 1. Open any dashboard and choose `Edit Dashboard`
 2. Add a card
 3. Search for `Maintenance Tracker Manager`
-4. If it does not appear right away, refresh or reopen Home Assistant once
-5. If it still does not appear, use a `Manual` card with:
+4. If it still does not appear, use a `Manual` card with:
 
 ```yaml
 type: custom:maintenance-tracker-manager
