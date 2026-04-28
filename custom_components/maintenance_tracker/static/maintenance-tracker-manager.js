@@ -1070,6 +1070,14 @@ class MaintenanceTrackerManager extends HTMLElement {
       <style>
         :host {
           display: block;
+          --mt-surface-base: var(--ha-card-background, var(--card-background-color, #ffffff));
+          --mt-surface-subtle: var(--secondary-background-color, var(--card-background-color, #f6f8fb));
+          --mt-surface-raised: var(--primary-background-color, var(--ha-card-background, var(--card-background-color, #ffffff)));
+          --mt-input-border: color-mix(in srgb, var(--divider-color, rgba(127,127,127,0.24)) 86%, transparent);
+          --mt-overlay-scrim: rgba(0,0,0,0.45);
+          --mt-preview-accent: rgba(42,157,143,0.12);
+          --mt-preview-surface: color-mix(in srgb, var(--mt-surface-subtle) 88%, transparent);
+          --mt-selected-surface: rgba(42,157,143,0.14);
         }
         ha-card {
           background: transparent;
@@ -1452,7 +1460,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         .dialog-backdrop {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,0.45);
+          background: var(--mt-overlay-scrim);
           display: flex;
           align-items: flex-start;
           justify-content: center;
@@ -1465,7 +1473,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         .dialog {
           width: min(460px, 100%);
           box-sizing: border-box;
-          background: #20252c;
+          background: var(--mt-surface-base);
           color: var(--primary-text-color);
           border-radius: 22px;
           padding: 16px;
@@ -1487,9 +1495,9 @@ class MaintenanceTrackerManager extends HTMLElement {
           padding: 12px 14px;
           border-radius: 18px;
           background:
-            radial-gradient(circle at top left, rgba(42,157,143,0.12), transparent 40%),
-            rgba(255,255,255,0.03);
-          border: 1px solid rgba(127,127,127,0.15);
+            radial-gradient(circle at top left, var(--mt-preview-accent), transparent 40%),
+            var(--mt-preview-surface);
+          border: 1px solid var(--mt-input-border);
           margin-bottom: 14px;
         }
         .dialog-preview-dial {
@@ -1542,10 +1550,10 @@ class MaintenanceTrackerManager extends HTMLElement {
         }
         input,
         textarea {
-          border: 1px solid rgba(127,127,127,0.22);
+          border: 1px solid var(--mt-input-border);
           border-radius: 12px;
           padding: 10px 12px;
-          background: #171b21;
+          background: var(--mt-surface-raised);
           color: var(--primary-text-color);
           font: inherit;
         }
@@ -1573,8 +1581,8 @@ class MaintenanceTrackerManager extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #171b21;
-          border: 1px solid rgba(127,127,127,0.22);
+          background: var(--mt-surface-raised);
+          border: 1px solid var(--mt-input-border);
           color: #2a9d8f;
         }
         .icon-picker-preview ha-icon {
@@ -1591,10 +1599,10 @@ class MaintenanceTrackerManager extends HTMLElement {
           gap: 8px;
         }
         .icon-picker-panel {
-          border: 1px solid rgba(127,127,127,0.16);
+          border: 1px solid var(--mt-input-border);
           border-radius: 16px;
           padding: 12px;
-          background: #171b21;
+          background: var(--mt-surface-subtle);
         }
         .icon-picker-help {
           color: var(--secondary-text-color);
@@ -1624,8 +1632,8 @@ class MaintenanceTrackerManager extends HTMLElement {
         }
         .icon-tile {
           appearance: none;
-          border: 1px solid rgba(127,127,127,0.16);
-          background: #20252c;
+          border: 1px solid var(--mt-input-border);
+          background: var(--mt-surface-base);
           color: var(--primary-text-color);
           border-radius: 14px;
           padding: 10px 8px;
@@ -1648,7 +1656,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         }
         .icon-tile-active {
           border-color: rgba(42,157,143,0.5);
-          background: rgba(42,157,143,0.14);
+          background: var(--mt-selected-surface);
         }
         .icon-empty {
           color: var(--secondary-text-color);
