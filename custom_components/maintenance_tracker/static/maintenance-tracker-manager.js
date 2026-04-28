@@ -5,7 +5,6 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   static getStubConfig() {
     return {
-      title: "Maintenance Tracker",
       mode: "manager",
       compact_count: 8,
       visibility_due_days: 3,
@@ -197,7 +196,6 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   setConfig(config) {
     this._config = {
-      title: "Maintenance Tracker",
       mode: "manager",
       compact_count: 8,
       selected_trackers: [],
@@ -2035,7 +2033,6 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = {
-      title: "Maintenance Tracker",
       mode: "manager",
       compact_count: 8,
       visibility_due_days: 3,
@@ -2179,10 +2176,6 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       </style>
       <div class="stack">
         <label>
-          Card title
-          <input id="title" value="${this._config?.title || "Maintenance Tracker"}" />
-        </label>
-        <label>
           Display mode
           <select id="mode">
             <option value="manager" ${mode === "manager" ? "selected" : ""}>Manager</option>
@@ -2273,9 +2266,6 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
         </div>
       </div>
     `;
-    this.shadowRoot.getElementById("title").addEventListener("input", (event) => {
-      this._emitConfig({ title: event.target.value });
-    });
     this.shadowRoot.getElementById("mode").addEventListener("change", (event) => {
       this._emitConfig({ mode: event.target.value });
     });
