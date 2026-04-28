@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import voluptuous as vol
 
@@ -11,8 +12,9 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
@@ -33,6 +35,10 @@ from . import websocket_api
 DATA_STORE = "store"
 DATA_SERVICES_REGISTERED = "services_registered"
 DATA_DUE_CHECK_UNSUB = "due_check_unsub"
+LOVELACE_RESOURCES_STORAGE_VERSION = 1
+LOVELACE_RESOURCES_STORAGE_KEY = "lovelace_resources"
+LOVELACE_RESOURCE_ID = "maintenance_tracker_manager_local"
+LOVELACE_RESOURCE_URL = f"/api/{DOMAIN}/static/maintenance-tracker-manager.js"
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 LOGGER = logging.getLogger(__name__)
 
@@ -91,6 +97,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             )
         ]
     )
+    await _async_ensure_lovelace_resource(hass)
     websocket_api.async_register(hass, store)
     await _async_process_due_notifications(hass)
 
@@ -113,6 +120,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unsub := hass.data.get(DOMAIN, {}).pop(DATA_DUE_CHECK_UNSUB, None):
         unsub()
     hass.data.get(DOMAIN, {}).pop(DATA_STORE, None)
+    await _async_remove_lovelace_resource(hass)
     return True
 
 
@@ -212,6 +220,53 @@ def _fire_updated(hass: HomeAssistant, action: str, tracker_id: str | None) -> N
         EVENT_TRACKERS_UPDATED,
         {"action": action, "tracker_id": tracker_id},
     )
+
+
+async def _async_ensure_lovelace_resource(hass: HomeAssistant) -> None:
+    """Ensure the frontend card resource exists for storage-mode dashboards."""
+    resource_store: Store[dict[str, Any]] = Store(
+        hass, LOVELACE_RESOURCES_STORAGE_VERSION, LOVELACE_RESOURCES_STORAGE_KEY
+    )
+    data = await resource_store.async_load() or {"items": []}
+    items = list(data.get("items") or [])
+
+    for item in items:
+        if item.get("id") == LOVELACE_RESOURCE_ID or item.get("url") == LOVELACE_RESOURCE_URL:
+            return
+
+    items.append(
+        {
+            "id": LOVELACE_RESOURCE_ID,
+            "url": LOVELACE_RESOURCE_URL,
+            "type": "module",
+        }
+    )
+    data["items"] = items
+    await resource_store.async_save(data)
+
+
+async def _async_remove_lovelace_resource(hass: HomeAssistant) -> None:
+    """Remove the frontend card resource when the integration is unloaded."""
+    resource_store: Store[dict[str, Any]] = Store(
+        hass, LOVELACE_RESOURCES_STORAGE_VERSION, LOVELACE_RESOURCES_STORAGE_KEY
+    )
+    data = await resource_store.async_load()
+    if not data:
+        return
+
+    items = list(data.get("items") or [])
+    filtered = [
+        item
+        for item in items
+        if item.get("id") != LOVELACE_RESOURCE_ID and item.get("url") != LOVELACE_RESOURCE_URL
+    ]
+    if len(filtered) == len(items):
+        return
+
+    data["items"] = filtered
+    await resource_store.async_save(data)
+
+
 async def _async_process_due_notifications(hass: HomeAssistant) -> None:
     """Process due notifications using current entry options."""
     store = hass.data.get(DOMAIN, {}).get(DATA_STORE)
