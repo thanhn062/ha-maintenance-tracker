@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-04-28
+
+### Fixed
+- Automatically register the Lovelace card resource during integration setup so fresh installs can discover `Maintenance Tracker Manager` in the card picker without a manual resource step.
+- Remove the auto-registered Lovelace resource again when the integration is unloaded.
+
 ## [0.1.3] - 2026-04-28
 
 ### Changed
