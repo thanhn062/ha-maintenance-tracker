@@ -12,12 +12,46 @@
 [![Hassfest](https://img.shields.io/github/actions/workflow/status/thanhn062/ha-maintenance-tracker/hassfest.yaml?branch=main&style=for-the-badge&label=hassfest)](https://github.com/thanhn062/ha-maintenance-tracker/actions/workflows/hassfest.yaml)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/thanhnatos)
 
-Contained Home Assistant maintenance tracker integration with:
+Maintenance Tracker is a lightweight productivity integration for Home Assistant.
 
-- integration-owned JSON storage
-- full CRUD services
-- custom card manager UI
-- circular dial presentation for at-a-glance status
+It is a modern revival of an older project I built about 6 years ago:
+[HowManyDaysSince](https://github.com/thanhn062/HowManyDaysSince)
+
+I wanted to bring that idea into Home Assistant in a way that feels simple, practical, and easy to live with day to day. There have been other takes on this kind of reminder tracker, but this version is built around a more intuitive and low-friction user experience.
+
+## Features
+
+### Display Modes
+- Manager
+- Compact
+- Badge
+
+### Highlights
+- Integration-owned JSON storage
+- Full create, update, reset, and delete task flow
+- Highly customizable compact card content
+- Full MDI icon selection
+- Expressive colored circular progress bars
+- Visibility filtering
+- Notification settings
+- In-line reset with confirmation in all modes
+
+## Intended Workflow
+
+This integration was designed to feel as close to “set it and forget it” as possible:
+
+1. Create the task
+2. Set the visibility filter
+3. Complete the task when it becomes due or visible on your dashboard
+4. Repeat
+
+For the best experience, I recommend placing the Manager card inside a Bubble Card pop-up.
+
+## Credits
+
+Badge mode was inspired by [ha-trash-card](https://github.com/idaho/hassio-trash-card).
+
+Thanks to its creator for the inspiration.
 
 ## Repo Role
 
