@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2026-04-29
+
+### Added
+- Added a notification setting to create persistent Home Assistant notifications for due tasks.
+
+### Changed
+- Shortened the notification-setting label to `Create persistent notifications` for a cleaner editor UI.
+
 ## [0.1.5] - 2026-04-29
 
 ### Changed

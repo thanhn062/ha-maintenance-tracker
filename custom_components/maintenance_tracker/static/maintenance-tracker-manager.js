@@ -2422,7 +2422,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
             </label>
             <label class="picker-item">
               <input id="notify-persistent" type="checkbox" ${this._settings?.notify_persistent === true ? "checked" : ""} />
-              <span>Create persistent Home Assistant notifications</span>
+              <span>Create persistent notifications</span>
             </label>
           </div>
           <div class="inline-grid">
