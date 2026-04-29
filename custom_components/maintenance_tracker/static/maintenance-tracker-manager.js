@@ -41,6 +41,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._subscribedHass = null;
     this._preview = false;
     this._boundDocumentPointerHandler = this._handleDocumentPointer.bind(this);
+    this._boundDialogViewportHandler = this._handleDialogViewportChange.bind(this);
   }
 
   static get ICON_OPTIONS() {
@@ -229,11 +230,17 @@ class MaintenanceTrackerManager extends HTMLElement {
   connectedCallback() {
     this._ensureEventSubscription();
     document.addEventListener("pointerdown", this._boundDocumentPointerHandler, true);
+    window.addEventListener("resize", this._boundDialogViewportHandler);
+    window.visualViewport?.addEventListener("resize", this._boundDialogViewportHandler);
+    window.visualViewport?.addEventListener("scroll", this._boundDialogViewportHandler);
     this._render();
   }
 
   disconnectedCallback() {
     document.removeEventListener("pointerdown", this._boundDocumentPointerHandler, true);
+    window.removeEventListener("resize", this._boundDialogViewportHandler);
+    window.visualViewport?.removeEventListener("resize", this._boundDialogViewportHandler);
+    window.visualViewport?.removeEventListener("scroll", this._boundDialogViewportHandler);
     this._teardownEventSubscription();
   }
 
@@ -438,6 +445,76 @@ class MaintenanceTrackerManager extends HTMLElement {
     this._dialog = null;
     this._suspendTrackerRefresh = false;
     this._render();
+  }
+
+  _handleDialogViewportChange() {
+    if (!this._dialog) return;
+    this._updateDialogBackdropBounds();
+  }
+
+  _composedParent(node) {
+    if (!node) return null;
+    return node.assignedSlot || node.parentNode || node.host || null;
+  }
+
+  _findDialogAnchorRect() {
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+
+    for (let node = this; node; node = this._composedParent(node)) {
+      if (!(node instanceof Element)) continue;
+      if (node === this) continue;
+
+      const tagName = node.tagName || "";
+      const role = node.getAttribute?.("role") || "";
+      const classList = node.classList;
+      const rect = node.getBoundingClientRect?.();
+      if (!rect || rect.width < 40 || rect.height < 40) continue;
+
+      const style = window.getComputedStyle(node);
+      const isDialogLike =
+        role === "dialog" ||
+        tagName === "HA-DIALOG" ||
+        tagName === "DIALOG" ||
+        classList?.contains("mdc-dialog") ||
+        classList?.contains("mdc-dialog__surface") ||
+        classList?.contains("dialog-surface") ||
+        classList?.contains("bubble-pop-up");
+
+      const isConstrainedFixed =
+        style.position === "fixed" &&
+        (rect.width < viewportWidth - 24 || rect.height < viewportHeight - 24);
+
+      if (!isDialogLike && !isConstrainedFixed) continue;
+
+      return {
+        top: Math.max(0, rect.top),
+        left: Math.max(0, rect.left),
+        width: Math.max(0, rect.width),
+        height: Math.max(0, rect.height),
+      };
+    }
+
+    return null;
+  }
+
+  _updateDialogBackdropBounds() {
+    const backdrop = this.shadowRoot?.querySelector(".dialog-backdrop");
+    if (!backdrop) return;
+
+    const rect = this._findDialogAnchorRect();
+    if (!rect) {
+      backdrop.style.removeProperty("--mt-dialog-top");
+      backdrop.style.removeProperty("--mt-dialog-left");
+      backdrop.style.removeProperty("--mt-dialog-width");
+      backdrop.style.removeProperty("--mt-dialog-height");
+      return;
+    }
+
+    backdrop.style.setProperty("--mt-dialog-top", `${rect.top}px`);
+    backdrop.style.setProperty("--mt-dialog-left", `${rect.left}px`);
+    backdrop.style.setProperty("--mt-dialog-width", `${rect.width}px`);
+    backdrop.style.setProperty("--mt-dialog-height", `${rect.height}px`);
   }
 
   _slugify(value) {
@@ -1461,13 +1538,16 @@ class MaintenanceTrackerManager extends HTMLElement {
         }
         .dialog-backdrop {
           position: fixed;
-          inset: 0;
+          top: var(--mt-dialog-top, 0);
+          left: var(--mt-dialog-left, 0);
+          width: var(--mt-dialog-width, 100vw);
+          height: var(--mt-dialog-height, 100dvh);
           background: var(--mt-overlay-scrim);
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: center;
           z-index: 9999;
-          padding: 36px 16px 20px;
+          padding: 20px 16px;
           overflow-y: auto;
           overscroll-behavior: contain;
           -webkit-overflow-scrolling: touch;
@@ -1719,6 +1799,7 @@ class MaintenanceTrackerManager extends HTMLElement {
             padding: 0;
           }
           .dialog-backdrop {
+            align-items: flex-start;
             padding: 24px 10px 14px;
           }
           .dialog {
@@ -1899,6 +1980,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         emptyState.hidden = hasVisible;
       }
     };
+    requestAnimationFrame(() => this._updateDialogBackdropBounds());
     if (titleInput && previewTitle) {
       this._bindDialogFieldFocus(titleInput, { preventEnterSubmit: true });
       titleInput.addEventListener("input", () => {
