@@ -153,6 +153,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         store = _get_store(hass)
         data = dict(call.data)
         tracker_id = _extract_tracker_reference(data)
+        data.pop("tracker", None)
+        data.pop("tracker_id", None)
         tracker = await store.async_update_tracker(tracker_id, data)
         _fire_updated(hass, "update", tracker["id"])
         await _async_process_due_notifications(hass)
@@ -231,7 +233,7 @@ def _get_store(hass: HomeAssistant) -> TrackerStore:
 
 def _extract_tracker_reference(data: dict[str, Any]) -> str:
     """Return the public tracker handle, preferring the new field name."""
-    return data.pop("tracker", None) or data["tracker_id"]
+    return data.get("tracker") or data["tracker_id"]
 
 
 def _fire_updated(hass: HomeAssistant, action: str, tracker_id: str | None) -> None:
