@@ -32,3 +32,7 @@ jobs:
         run: node --check custom_components/maintenance_tracker/static/maintenance-tracker-manager.js
       - name: Check Python syntax
         run: python -m py_compile custom_components/maintenance_tracker/*.py
+      - name: Run Python tests
+        run: python -m unittest discover -s tests -p "test_*.py"
+      - name: Run frontend tests
+        run: node --test tests/test_frontend_helpers.mjs

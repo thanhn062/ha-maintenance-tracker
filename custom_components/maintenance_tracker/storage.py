@@ -26,6 +26,7 @@ from .const import (
 DEFAULT_ICON = "mdi:hammer-wrench"
 SLUG_REGEX = re.compile(r"^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$")
 LOGGER = logging.getLogger(__name__)
+NOTIFICATION_TITLE = "Maintenance Task Due"
 
 
 def _default_settings() -> dict[str, Any]:
@@ -33,6 +34,14 @@ def _default_settings() -> dict[str, Any]:
         "notify_on_due": DEFAULT_NOTIFY_ON_DUE,
         "notify_hour": DEFAULT_NOTIFY_HOUR,
         "notify_persistent": DEFAULT_NOTIFY_PERSISTENT,
+    }
+
+
+def _empty_registry() -> dict[str, Any]:
+    return {
+        "version": 1,
+        "settings": _default_settings(),
+        "trackers": [],
     }
 
 
@@ -111,6 +120,10 @@ def _derive_tracker(tracker: dict[str, Any], due_soon_threshold: int) -> dict[st
     return result
 
 
+def _due_message(tracker: dict[str, Any]) -> str:
+    return f"{tracker['title']} is due today."
+
+
 @dataclass
 class TrackerStore:
     """Manager for maintenance tracker persistence and derivation."""
@@ -122,21 +135,13 @@ class TrackerStore:
         self._store: Store[dict[str, Any]] = Store(
             self.hass, STORAGE_VERSION, STORAGE_KEY
         )
-        self._data: dict[str, Any] = {
-            "version": 1,
-            "settings": _default_settings(),
-            "trackers": [],
-        }
+        self._data: dict[str, Any] = _empty_registry()
 
     async def async_load(self) -> None:
         """Load registry from storage."""
         data = await self._store.async_load()
         if not data:
-            self._data = {
-                "version": 1,
-                "settings": _default_settings(),
-                "trackers": [],
-            }
+            self._data = _empty_registry()
             return
         trackers: list[dict[str, Any]] = []
         seen_ids: set[str] = set()
@@ -240,13 +245,16 @@ class TrackerStore:
         enabled = bool(settings.get("notify_on_due", DEFAULT_NOTIFY_ON_DUE))
         if not enabled:
             return []
+        notify_persistent = bool(
+            settings.get("notify_persistent", DEFAULT_NOTIFY_PERSISTENT)
+        )
 
         triggered: list[dict[str, Any]] = []
         changed = False
-        for tracker in self.list_trackers():
+        for current in self._data["trackers"]:
+            tracker = _derive_tracker(current, self.due_soon_threshold)
             if tracker["status"] != "due":
                 continue
-            current = self._find_tracker(tracker["id"])
             if current.get("last_due_notification_date") == tracker["next_due_date"]:
                 continue
             current["last_due_notification_date"] = tracker["next_due_date"]
@@ -267,35 +275,44 @@ class TrackerStore:
                 "status": tracker["status"],
             }
             self.hass.bus.async_fire(EVENT_TRACKER_DUE, payload)
-            await self._async_send_due_notification(tracker)
+            await self._async_send_due_notification(
+                tracker,
+                notify_persistent=notify_persistent,
+            )
 
         return triggered
 
-    async def _async_send_due_notification(self, tracker: dict[str, Any]) -> None:
+    async def _async_send_due_notification(
+        self,
+        tracker: dict[str, Any],
+        *,
+        notify_persistent: bool,
+    ) -> None:
         """Send a Home Assistant notification using the shared notify pipeline."""
         tag = f"maintenance_tracker_{tracker['id']}_{tracker['next_due_date']}"
+        message = _due_message(tracker)
         try:
             await self.hass.services.async_call(
                 "notify",
                 "notify",
                 {
-                    "title": "Maintenance Task Due",
-                    "message": f"{tracker['title']} is due today.",
+                    "title": NOTIFICATION_TITLE,
+                    "message": message,
                     "data": {"tag": tag},
                 },
                 blocking=True,
             )
         except Exception:
             LOGGER.exception("Failed to send due notification via notify.notify")
-        if not self.get_settings().get("notify_persistent", DEFAULT_NOTIFY_PERSISTENT):
+        if not notify_persistent:
             return
         try:
             await self.hass.services.async_call(
                 "persistent_notification",
                 "create",
                 {
-                    "title": "Maintenance Task Due",
-                    "message": f"{tracker['title']} is due today.",
+                    "title": NOTIFICATION_TITLE,
+                    "message": message,
                     "notification_id": tag,
                 },
                 blocking=True,

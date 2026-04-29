@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Any
+from functools import wraps
 
 import voluptuous as vol
 
@@ -213,6 +214,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
 
 def _wrap_errors(handler):
+    @wraps(handler)
     async def wrapped(call: ServiceCall) -> None:
         try:
             await handler(call)
@@ -243,11 +245,15 @@ def _fire_updated(hass: HomeAssistant, action: str, tracker_id: str | None) -> N
     )
 
 
-async def _async_ensure_lovelace_resource(hass: HomeAssistant) -> None:
-    """Ensure the frontend card resource exists for storage-mode dashboards."""
-    resource_store: Store[dict[str, Any]] = Store(
+def _lovelace_resource_store(hass: HomeAssistant) -> Store[dict[str, Any]]:
+    return Store(
         hass, LOVELACE_RESOURCES_STORAGE_VERSION, LOVELACE_RESOURCES_STORAGE_KEY
     )
+
+
+async def _async_ensure_lovelace_resource(hass: HomeAssistant) -> None:
+    """Ensure the frontend card resource exists for storage-mode dashboards."""
+    resource_store = _lovelace_resource_store(hass)
     data = await resource_store.async_load() or {"items": []}
     items = list(data.get("items") or [])
 
@@ -268,9 +274,7 @@ async def _async_ensure_lovelace_resource(hass: HomeAssistant) -> None:
 
 async def _async_remove_lovelace_resource(hass: HomeAssistant) -> None:
     """Remove the frontend card resource when the integration is unloaded."""
-    resource_store: Store[dict[str, Any]] = Store(
-        hass, LOVELACE_RESOURCES_STORAGE_VERSION, LOVELACE_RESOURCES_STORAGE_KEY
-    )
+    resource_store = _lovelace_resource_store(hass)
     data = await resource_store.async_load()
     if not data:
         return

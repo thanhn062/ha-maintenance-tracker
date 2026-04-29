@@ -308,15 +308,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     }
     try {
       const result = await this._callWS("maintenance_tracker/list_trackers");
-      this._trackers = (result.trackers || []).sort((left, right) => {
-        const priorityDiff = this._urgencyInfo(left).priority - this._urgencyInfo(right).priority;
-        if (priorityDiff !== 0) return priorityDiff;
-        const overdueDiff = (right.days_overdue || 0) - (left.days_overdue || 0);
-        if (overdueDiff !== 0) return overdueDiff;
-        const remainingDiff = (left.days_remaining || 0) - (right.days_remaining || 0);
-        if (remainingDiff !== 0) return remainingDiff;
-        return (left.title || "").localeCompare(right.title || "");
-      });
+      this._trackers = this._sortTrackers(result.trackers || []);
       this._lastLoadedAt = Date.now();
     } catch (err) {
       this._error = err?.message || String(err);
@@ -363,10 +355,12 @@ class MaintenanceTrackerManager extends HTMLElement {
   }
 
   _headerSummary() {
-    const critical = this._trackers.filter((item) => this._urgencyInfo(item).priority === 0).length;
-    const high = this._trackers.filter((item) => this._urgencyInfo(item).priority === 1).length;
-    const medium = this._trackers.filter((item) => this._urgencyInfo(item).priority === 2).length;
-    const low = this._trackers.filter((item) => this._urgencyInfo(item).priority === 3).length;
+    const counts = [0, 0, 0, 0];
+    for (const tracker of this._trackers) {
+      const priority = this._urgencyInfo(tracker).priority;
+      counts[priority] = (counts[priority] || 0) + 1;
+    }
+    const [critical, high, medium, low] = counts;
     const parts = [];
     if (critical) parts.push(`${critical} critical`);
     if (high) parts.push(`${high} high`);
@@ -379,7 +373,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     const selected = Array.isArray(this._config.selected_trackers) ? this._config.selected_trackers : [];
     const selectedSet = new Set(selected.map((item) => `${item}`.trim().toLowerCase()).filter(Boolean));
     const visible = selectedSet.size
-      ? this._trackers.filter((tracker) => selectedSet.has((tracker.slug || tracker.id || "").toLowerCase()))
+      ? this._trackers.filter((tracker) => selectedSet.has(this._trackerHandle(tracker).toLowerCase()))
       : [...this._trackers];
     if (this._config.mode === "compact" || this._config.mode === "badge") {
       const dueDays = Math.max(0, Number(this._config.visibility_due_days ?? 3));
@@ -394,6 +388,30 @@ class MaintenanceTrackerManager extends HTMLElement {
       return filtered.slice(0, compactCount);
     }
     return visible;
+  }
+
+  _trackerHandle(tracker) {
+    return `${tracker?.slug || tracker?.id || ""}`.trim();
+  }
+
+  _sortTrackers(trackers) {
+    return trackers
+      .map((tracker, index) => ({
+        tracker,
+        index,
+        priority: this._urgencyInfo(tracker).priority,
+      }))
+      .sort((left, right) => {
+        if (left.priority !== right.priority) return left.priority - right.priority;
+        const overdueDiff = (right.tracker.days_overdue || 0) - (left.tracker.days_overdue || 0);
+        if (overdueDiff !== 0) return overdueDiff;
+        const remainingDiff = (left.tracker.days_remaining || 0) - (right.tracker.days_remaining || 0);
+        if (remainingDiff !== 0) return remainingDiff;
+        const titleDiff = (left.tracker.title || "").localeCompare(right.tracker.title || "");
+        if (titleDiff !== 0) return titleDiff;
+        return left.index - right.index;
+      })
+      .map(({ tracker }) => tracker);
   }
 
   _summaryText(tracker, options = {}) {
@@ -802,7 +820,7 @@ class MaintenanceTrackerManager extends HTMLElement {
         await this._hass.callService("maintenance_tracker", "create_tracker", payload);
       } else {
         await this._hass.callService("maintenance_tracker", "update_tracker", {
-          tracker_id: this._dialog.tracker.id,
+          tracker: this._trackerHandle(this._dialog.tracker),
           title: payload.title,
           icon: payload.icon,
           lifespan_days: payload.lifespan_days,
@@ -823,7 +841,7 @@ class MaintenanceTrackerManager extends HTMLElement {
   async _deleteTracker(tracker) {
     try {
       await this._hass.callService("maintenance_tracker", "delete_tracker", {
-        tracker_id: tracker.id,
+        tracker: this._trackerHandle(tracker),
       });
       this._lastLoadedAt = 0;
       await this._loadTrackers();
@@ -836,7 +854,7 @@ class MaintenanceTrackerManager extends HTMLElement {
   async _resetTracker(tracker) {
     try {
       await this._hass.callService("maintenance_tracker", "reset", {
-        tracker_id: tracker.id,
+        tracker: this._trackerHandle(tracker),
       });
       this._lastLoadedAt = 0;
       await this._loadTrackers();
@@ -861,6 +879,13 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   _clearBadgeResetArm() {
     this._badgeResetArmedId = null;
+  }
+
+  _clearAllArms() {
+    this._clearCompactResetArm();
+    this._clearManagerResetArm();
+    this._clearManagerDeleteArm();
+    this._clearBadgeResetArm();
   }
 
   _handleDocumentPointer(event) {
@@ -1028,6 +1053,106 @@ class MaintenanceTrackerManager extends HTMLElement {
     `;
   }
 
+  _renderDialogIconPicker({ tracker, iconPickerMode, groupedIcons, allIcons, hasQuery }) {
+    return `
+      <div class="icon-picker-shell">
+        <label>Icon</label>
+        <div class="icon-picker-bar">
+          <div class="icon-picker-preview">
+            <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
+          </div>
+          <input name="icon" id="icon-search-input" value="${this._dialog.iconQuery || ""}" placeholder="Search icons" autocomplete="off" autocapitalize="off" spellcheck="false" />
+          <div class="icon-picker-actions">
+            <button type="button" class="action ${iconPickerMode === "common" ? "action-primary" : ""}" id="show-common-icons">Common icons</button>
+            <button type="button" class="action ${iconPickerMode === "all" ? "action-primary" : ""}" id="show-all-icons">All Icons</button>
+          </div>
+        </div>
+        ${this._dialog.iconPickerOpen ? `
+          <div class="icon-picker-panel">
+            <div class="icon-picker-help">${this._dialog.allIconsLoading
+              ? "Loading the full Material Design Icons catalog..."
+              : iconPickerMode === "all"
+                ? (hasQuery
+                  ? "Search results from the full Material Design Icons catalog."
+                  : "Press Enter in the search field to search all icons.")
+                : "Common icons for common tasks. This list stays fixed; press Enter in the search field to search all icons."}</div>
+            ${iconPickerMode === "all" ? `
+              ${allIcons.length ? `
+                <div class="icon-grid icon-grid-all">
+                  ${allIcons.map((icon) => `
+                    <button type="button" class="icon-tile ${icon === tracker.icon ? "icon-tile-active" : ""}" data-icon-choice="${icon}">
+                      <ha-icon icon="${icon}"></ha-icon>
+                      <span>${this._iconDisplayLabel(icon)}</span>
+                    </button>
+                  `).join("")}
+                </div>
+              ` : `<div class="icon-empty">No icons match that search.</div>`}
+            ` : groupedIcons.length ? groupedIcons.map((group) => `
+              <div class="icon-group">
+                <div class="icon-group-label">${group.label}</div>
+                <div class="icon-grid">
+                  ${group.icons.map((icon) => `
+                    <button type="button" class="icon-tile ${icon === tracker.icon ? "icon-tile-active" : ""}" data-icon-choice="${icon}">
+                      <ha-icon icon="${icon}"></ha-icon>
+                      <span>${this._iconDisplayLabel(icon)}</span>
+                    </button>
+                  `).join("")}
+                </div>
+              </div>
+            `).join("") : `<div class="icon-empty">No icons match that search.</div>`}
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  _renderDialogMarkup({ contained, isEdit, tracker, previewTitle, previewIcon, previewCircumference, previewProgress, previewColor, iconPickerMode, groupedIcons, allIcons, hasQuery }) {
+    const headerAction = contained
+      ? `<button type="button" class="action dialog-header-action" data-close-dialog>Close</button>`
+      : `<button class="icon-button" data-close-dialog>&times;</button>`;
+    const shellClass = contained ? "dialog dialog-contained" : "dialog";
+    const outerClass = contained ? "dialog-inline-shell" : "dialog-backdrop";
+
+    return `
+      <div class="${outerClass}">
+        <div class="${shellClass}">
+          <div class="dialog-header">
+            <div class="dialog-title">${isEdit ? "Edit tracker" : "Add tracker"}</div>
+            ${headerAction}
+          </div>
+          <div class="dialog-preview">
+            <div class="dialog-preview-dial">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="dial-bg" cx="50" cy="50" r="32"></circle>
+                <circle class="dial-progress" cx="50" cy="50" r="32" style="stroke:${previewColor};stroke-dasharray:${previewCircumference};stroke-dashoffset:${previewCircumference * (1 - previewProgress)};"></circle>
+              </svg>
+              <div class="dialog-preview-center">
+                <ha-icon icon="${previewIcon}"></ha-icon>
+              </div>
+            </div>
+            <div class="dialog-preview-copy">
+              <div class="dialog-preview-title">${previewTitle}</div>
+              <div class="dialog-preview-subtitle">Dial preview updates while you edit</div>
+            </div>
+          </div>
+          <form id="tracker-form">
+            <label>Title<input name="title" value="${tracker.title || ""}" required /></label>
+            ${this._renderDialogIconPicker({ tracker, iconPickerMode, groupedIcons, allIcons, hasQuery })}
+            <label>Lifespan days<input name="lifespan_days" type="number" min="1" value="${tracker.lifespan_days || 7}" required /></label>
+            <label>Last done<input name="last_done" type="date" value="${tracker.last_done || ""}" required /></label>
+            <label>Category<input name="category" value="${tracker.category || ""}" /></label>
+            <label>Notes<textarea name="notes" rows="3">${tracker.notes || ""}</textarea></label>
+            <div class="dialog-actions">
+              <button type="button" class="action" data-close-dialog>Cancel</button>
+              <button type="submit" class="action action-primary">${isEdit ? "Save" : "Create"}</button>
+            </div>
+            <div class="dialog-bottom-spacer" aria-hidden="true"></div>
+          </form>
+        </div>
+      </div>
+    `;
+  }
+
   _renderDialog() {
     if (!this._dialog) return "";
     const contained = this._isBubblePopupContext();
@@ -1048,175 +1173,137 @@ class MaintenanceTrackerManager extends HTMLElement {
     const groupedIcons = iconPickerMode === "all" ? [] : this._groupedIcons("");
     const allIcons = iconPickerMode === "all" ? this._allIconMatches(this._dialog.iconQuery) : [];
     const hasQuery = Boolean(this._normalizeIconQuery(this._dialog.iconQuery));
-    return contained ? `
-      <div class="dialog-inline-shell">
-        <div class="dialog dialog-contained">
-          <div class="dialog-header">
-            <div class="dialog-title">${isEdit ? "Edit tracker" : "Add tracker"}</div>
-            <button type="button" class="action dialog-header-action" data-close-dialog>Close</button>
-          </div>
-          <div class="dialog-preview">
-            <div class="dialog-preview-dial">
-              <svg viewBox="0 0 100 100" aria-hidden="true">
-                <circle class="dial-bg" cx="50" cy="50" r="32"></circle>
-                <circle class="dial-progress" cx="50" cy="50" r="32" style="stroke:${previewColor};stroke-dasharray:${previewCircumference};stroke-dashoffset:${previewCircumference * (1 - previewProgress)};"></circle>
-              </svg>
-              <div class="dialog-preview-center">
-                <ha-icon icon="${previewIcon}"></ha-icon>
-              </div>
-            </div>
-            <div class="dialog-preview-copy">
-              <div class="dialog-preview-title">${previewTitle}</div>
-              <div class="dialog-preview-subtitle">Dial preview updates while you edit</div>
-            </div>
-          </div>
-          <form id="tracker-form">
-            <label>Title<input name="title" value="${tracker.title || ""}" required /></label>
-            <div class="icon-picker-shell">
-              <label>Icon</label>
-              <div class="icon-picker-bar">
-                <div class="icon-picker-preview">
-                  <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
-                </div>
-                <input name="icon" id="icon-search-input" value="${this._dialog.iconQuery || ""}" placeholder="Search icons" autocomplete="off" autocapitalize="off" spellcheck="false" />
-                <div class="icon-picker-actions">
-                  <button type="button" class="action ${iconPickerMode === "common" ? "action-primary" : ""}" id="show-common-icons">Common icons</button>
-                  <button type="button" class="action ${iconPickerMode === "all" ? "action-primary" : ""}" id="show-all-icons">All Icons</button>
-                </div>
-              </div>
-              ${this._dialog.iconPickerOpen ? `
-                <div class="icon-picker-panel">
-                  <div class="icon-picker-help">${this._dialog.allIconsLoading
-                    ? "Loading the full Material Design Icons catalog..."
-                    : iconPickerMode === "all"
-                      ? (hasQuery
-                        ? "Search results from the full Material Design Icons catalog."
-                        : "Press Enter in the search field to search all icons.")
-                      : "Common icons for common tasks. This list stays fixed; press Enter in the search field to search all icons."}</div>
-                  ${iconPickerMode === "all" ? `
-                    ${allIcons.length ? `
-                      <div class="icon-grid icon-grid-all">
-                        ${allIcons.map((icon) => `
-                          <button type="button" class="icon-tile ${icon === tracker.icon ? "icon-tile-active" : ""}" data-icon-choice="${icon}">
-                            <ha-icon icon="${icon}"></ha-icon>
-                            <span>${this._iconDisplayLabel(icon)}</span>
-                          </button>
-                        `).join("")}
-                      </div>
-                    ` : `<div class="icon-empty">No icons match that search.</div>`}
-                  ` : groupedIcons.length ? groupedIcons.map((group) => `
-                    <div class="icon-group">
-                      <div class="icon-group-label">${group.label}</div>
-                      <div class="icon-grid">
-                        ${group.icons.map((icon) => `
-                          <button type="button" class="icon-tile ${icon === tracker.icon ? "icon-tile-active" : ""}" data-icon-choice="${icon}">
-                            <ha-icon icon="${icon}"></ha-icon>
-                            <span>${this._iconDisplayLabel(icon)}</span>
-                          </button>
-                        `).join("")}
-                      </div>
-                    </div>
-                  `).join("") : `<div class="icon-empty">No icons match that search.</div>`}
-                </div>
-              ` : ""}
-            </div>
-            <label>Lifespan days<input name="lifespan_days" type="number" min="1" value="${tracker.lifespan_days || 7}" required /></label>
-            <label>Last done<input name="last_done" type="date" value="${tracker.last_done || ""}" required /></label>
-            <label>Category<input name="category" value="${tracker.category || ""}" /></label>
-            <label>Notes<textarea name="notes" rows="3">${tracker.notes || ""}</textarea></label>
-            <div class="dialog-actions">
-              <button type="button" class="action" data-close-dialog>Cancel</button>
-              <button type="submit" class="action action-primary">${isEdit ? "Save" : "Create"}</button>
-            </div>
-            <div class="dialog-bottom-spacer" aria-hidden="true"></div>
-          </form>
-        </div>
-      </div>
-    ` : `
-      <div class="dialog-backdrop">
-        <div class="dialog">
-          <div class="dialog-header">
-            <div class="dialog-title">${isEdit ? "Edit tracker" : "Add tracker"}</div>
-            <button class="icon-button" data-close-dialog>&times;</button>
-          </div>
-          <div class="dialog-preview">
-            <div class="dialog-preview-dial">
-              <svg viewBox="0 0 100 100" aria-hidden="true">
-                <circle class="dial-bg" cx="50" cy="50" r="32"></circle>
-                <circle class="dial-progress" cx="50" cy="50" r="32" style="stroke:${previewColor};stroke-dasharray:${previewCircumference};stroke-dashoffset:${previewCircumference * (1 - previewProgress)};"></circle>
-              </svg>
-              <div class="dialog-preview-center">
-                <ha-icon icon="${previewIcon}"></ha-icon>
-              </div>
-            </div>
-            <div class="dialog-preview-copy">
-              <div class="dialog-preview-title">${previewTitle}</div>
-              <div class="dialog-preview-subtitle">Dial preview updates while you edit</div>
-            </div>
-          </div>
-          <form id="tracker-form">
-            <label>Title<input name="title" value="${tracker.title || ""}" required /></label>
-            <div class="icon-picker-shell">
-              <label>Icon</label>
-              <div class="icon-picker-bar">
-                <div class="icon-picker-preview">
-                  <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
-                </div>
-                <input name="icon" id="icon-search-input" value="${this._dialog.iconQuery || ""}" placeholder="Search icons" autocomplete="off" autocapitalize="off" spellcheck="false" />
-                <div class="icon-picker-actions">
-                  <button type="button" class="action ${iconPickerMode === "common" ? "action-primary" : ""}" id="show-common-icons">Common icons</button>
-                  <button type="button" class="action ${iconPickerMode === "all" ? "action-primary" : ""}" id="show-all-icons">All Icons</button>
-                </div>
-              </div>
-              ${this._dialog.iconPickerOpen ? `
-                <div class="icon-picker-panel">
-                  <div class="icon-picker-help">${this._dialog.allIconsLoading
-                    ? "Loading the full Material Design Icons catalog..."
-                    : iconPickerMode === "all"
-                      ? (hasQuery
-                        ? "Search results from the full Material Design Icons catalog."
-                        : "Press Enter in the search field to search all icons.")
-                      : "Common icons for common tasks. This list stays fixed; press Enter in the search field to search all icons."}</div>
-                  ${iconPickerMode === "all" ? `
-                    ${allIcons.length ? `
-                      <div class="icon-grid icon-grid-all">
-                        ${allIcons.map((icon) => `
-                          <button type="button" class="icon-tile ${icon === tracker.icon ? "icon-tile-active" : ""}" data-icon-choice="${icon}">
-                            <ha-icon icon="${icon}"></ha-icon>
-                            <span>${this._iconDisplayLabel(icon)}</span>
-                          </button>
-                        `).join("")}
-                      </div>
-                    ` : `<div class="icon-empty">No icons match that search.</div>`}
-                  ` : groupedIcons.length ? groupedIcons.map((group) => `
-                    <div class="icon-group">
-                      <div class="icon-group-label">${group.label}</div>
-                      <div class="icon-grid">
-                        ${group.icons.map((icon) => `
-                          <button type="button" class="icon-tile ${icon === tracker.icon ? "icon-tile-active" : ""}" data-icon-choice="${icon}">
-                            <ha-icon icon="${icon}"></ha-icon>
-                            <span>${this._iconDisplayLabel(icon)}</span>
-                          </button>
-                        `).join("")}
-                      </div>
-                    </div>
-                  `).join("") : `<div class="icon-empty">No icons match that search.</div>`}
-                </div>
-              ` : ""}
-            </div>
-            <label>Lifespan days<input name="lifespan_days" type="number" min="1" value="${tracker.lifespan_days || 7}" required /></label>
-            <label>Last done<input name="last_done" type="date" value="${tracker.last_done || ""}" required /></label>
-            <label>Category<input name="category" value="${tracker.category || ""}" /></label>
-            <label>Notes<textarea name="notes" rows="3">${tracker.notes || ""}</textarea></label>
-            <div class="dialog-actions">
-              <button type="button" class="action" data-close-dialog>Cancel</button>
-              <button type="submit" class="action action-primary">${isEdit ? "Save" : "Create"}</button>
-            </div>
-            <div class="dialog-bottom-spacer" aria-hidden="true"></div>
-          </form>
-        </div>
-      </div>
-    `;
+    return this._renderDialogMarkup({
+      contained,
+      isEdit,
+      tracker,
+      previewTitle,
+      previewIcon,
+      previewCircumference,
+      previewProgress,
+      previewColor,
+      iconPickerMode,
+      groupedIcons,
+      allIcons,
+      hasQuery,
+    });
+  }
+
+  _setDialogIconPickerMode(mode) {
+    if (!this._dialog) return;
+    this._syncDialogTrackerFromForm();
+    this._dialog.iconPickerOpen = true;
+    this._dialog.iconPickerMode = mode;
+  }
+
+  _loadAllIconsAndRender() {
+    if (!this._dialog || this._allIconOptions || this._dialog.allIconsLoading) {
+      this._render();
+      return;
+    }
+    this._dialog.allIconsLoading = true;
+    this._render();
+    void this._ensureAllIconsLoaded().then(() => {
+      if (!this._dialog) return;
+      this._dialog.allIconsLoading = false;
+      this._render();
+    });
+  }
+
+  _bindDialogControls() {
+    const titleInput = this.shadowRoot.querySelector('input[name="title"]');
+    const iconInput = this.shadowRoot.querySelector('input[name="icon"]');
+    const previewTitle = this.shadowRoot.querySelector(".dialog-preview-title");
+    const previewIcon = this.shadowRoot.querySelector(".dialog-preview-center ha-icon");
+    const iconBarPreview = this.shadowRoot.querySelector(".icon-picker-preview ha-icon");
+    const showCommonIcons = this.shadowRoot.getElementById("show-common-icons");
+    const showAllIcons = this.shadowRoot.getElementById("show-all-icons");
+
+    requestAnimationFrame(() => this._updateDialogBackdropBounds());
+
+    if (titleInput && previewTitle) {
+      this._bindDialogFieldFocus(titleInput, { preventEnterSubmit: true });
+      titleInput.addEventListener("input", () => {
+        if (this._dialog) {
+          this._dialog.tracker.title = titleInput.value;
+        }
+        previewTitle.textContent = titleInput.value.trim() || "Tracker title";
+      });
+    }
+
+    const bindTextField = (selector, key, transform = (value) => value, options = {}) => {
+      const field = this.shadowRoot.querySelector(selector);
+      this._bindDialogFieldFocus(field, options);
+      field?.addEventListener("input", () => {
+        if (this._dialog) {
+          this._dialog.tracker[key] = transform(field.value);
+        }
+      });
+      return field;
+    };
+
+    bindTextField('input[name="lifespan_days"]', "lifespan_days", (value) => Number(value || 7), { preventEnterSubmit: true });
+    bindTextField('input[name="last_done"]', "last_done", (value) => value, { preventEnterSubmit: true });
+    bindTextField('input[name="category"]', "category", (value) => value, { preventEnterSubmit: true });
+    bindTextField('textarea[name="notes"]', "notes");
+
+    if (iconInput && previewIcon) {
+      this._bindDialogFieldFocus(iconInput);
+      iconInput.addEventListener("input", () => {
+        if (!this._dialog) return;
+        this._syncDialogTrackerFromForm();
+        this._dialog.iconQuery = iconInput.value.trim();
+      });
+      iconInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this._dialog) return;
+        this._syncDialogTrackerFromForm();
+        const selectionStart = iconInput.selectionStart;
+        const selectionEnd = iconInput.selectionEnd;
+        this._dialog.iconQuery = iconInput.value.trim();
+        this._dialog.iconPickerOpen = true;
+        this._dialog.iconPickerMode = "all";
+        if (!this._allIconOptions && !this._dialog.allIconsLoading) {
+          this._dialog.allIconsLoading = true;
+          this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
+          void this._ensureAllIconsLoaded().then(() => {
+            if (!this._dialog) return;
+            this._dialog.allIconsLoading = false;
+            this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
+            requestAnimationFrame(() => {
+              this.shadowRoot?.querySelector('input[name="icon"]')?.blur();
+            });
+          });
+          return;
+        }
+        this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
+        requestAnimationFrame(() => {
+          this.shadowRoot?.querySelector('input[name="icon"]')?.blur();
+        });
+      });
+    }
+
+    showCommonIcons?.addEventListener("click", () => {
+      this._setDialogIconPickerMode("common");
+      this._render();
+    });
+    showAllIcons?.addEventListener("click", () => {
+      this._setDialogIconPickerMode("all");
+      this._loadAllIconsAndRender();
+    });
+    this.shadowRoot.querySelectorAll("[data-icon-choice]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const icon = button.dataset.iconChoice;
+        if (!iconInput || !this._dialog) return;
+        this._dialog.tracker.icon = icon;
+        this._dialog.iconQuery = this._iconLabel(icon);
+        previewIcon?.setAttribute("icon", icon);
+        iconBarPreview?.setAttribute("icon", icon);
+        this._render();
+      });
+    });
   }
 
   _render() {
@@ -1955,10 +2042,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     `;
 
     this.shadowRoot.getElementById("add-tracker")?.addEventListener("click", () => {
-      this._clearCompactResetArm();
-      this._clearManagerResetArm();
-      this._clearManagerDeleteArm();
-      this._clearBadgeResetArm();
+      this._clearAllArms();
       this._openDialog("create");
     });
     this.shadowRoot.addEventListener("click", (event) => {
@@ -2057,182 +2141,47 @@ class MaintenanceTrackerManager extends HTMLElement {
     });
     this.shadowRoot.querySelectorAll("[data-close-dialog]").forEach((button) => {
       button.addEventListener("click", () => {
-        this._clearCompactResetArm();
-        this._clearManagerResetArm();
-        this._clearManagerDeleteArm();
-        this._clearBadgeResetArm();
+        this._clearAllArms();
         this._closeDialog();
       });
     });
     this.shadowRoot.getElementById("tracker-form")?.addEventListener("submit", (event) => {
       this._submitDialog(event);
     });
-    const titleInput = this.shadowRoot.querySelector('input[name="title"]');
-    const iconInput = this.shadowRoot.querySelector('input[name="icon"]');
-    const previewTitle = this.shadowRoot.querySelector(".dialog-preview-title");
-    const previewIcon = this.shadowRoot.querySelector(".dialog-preview-center ha-icon");
-    const iconBarPreview = this.shadowRoot.querySelector(".icon-picker-preview ha-icon");
-    const showCommonIcons = this.shadowRoot.getElementById("show-common-icons");
-    const showAllIcons = this.shadowRoot.getElementById("show-all-icons");
-    const applyIconFilter = (query) => {
-      if (this._dialog?.iconPickerMode === "all") {
-        const allTiles = Array.from(this.shadowRoot.querySelectorAll(".icon-grid-all .icon-tile"));
-        if (!allTiles.length) {
-          this._rerenderDialogAndRestoreIconInput(iconInput?.selectionStart, iconInput?.selectionEnd);
-          return;
-        }
-        let visibleCount = 0;
-        allTiles.forEach((tile) => {
-          const icon = tile.dataset.iconChoice || "";
-          const visible = this._matchesIconQuery(icon, query);
-          tile.hidden = !visible;
-          if (visible) visibleCount += 1;
-        });
-        const emptyState = this.shadowRoot.querySelector(".icon-empty");
-        if (emptyState) {
-          emptyState.hidden = visibleCount > 0;
-        }
-        return;
-      }
-      this.shadowRoot.querySelectorAll(".icon-group").forEach((group) => {
-        let visibleCount = 0;
-        group.querySelectorAll(".icon-tile").forEach((tile) => {
-          const icon = tile.dataset.iconChoice || "";
-          const visible = this._matchesIconQuery(icon, query);
-          tile.hidden = !visible;
-          if (visible) visibleCount += 1;
-        });
-        group.hidden = visibleCount === 0;
-      });
-      const emptyState = this.shadowRoot.querySelector(".icon-empty");
-      if (emptyState) {
-        const hasVisible = Array.from(this.shadowRoot.querySelectorAll(".icon-tile")).some((tile) => !tile.hidden);
-        emptyState.hidden = hasVisible;
-      }
-    };
-    requestAnimationFrame(() => this._updateDialogBackdropBounds());
-    if (titleInput && previewTitle) {
-      this._bindDialogFieldFocus(titleInput, { preventEnterSubmit: true });
-      titleInput.addEventListener("input", () => {
-        if (this._dialog) {
-          this._dialog.tracker.title = titleInput.value;
-        }
-        previewTitle.textContent = titleInput.value.trim() || "Tracker title";
-      });
-    }
-    const lifespanInput = this.shadowRoot.querySelector('input[name="lifespan_days"]');
-    this._bindDialogFieldFocus(lifespanInput, { preventEnterSubmit: true });
-    lifespanInput?.addEventListener("input", () => {
-      if (this._dialog) {
-        this._dialog.tracker.lifespan_days = Number(lifespanInput.value || 7);
-      }
-    });
-    const lastDoneInput = this.shadowRoot.querySelector('input[name="last_done"]');
-    this._bindDialogFieldFocus(lastDoneInput, { preventEnterSubmit: true });
-    lastDoneInput?.addEventListener("input", () => {
-      if (this._dialog) {
-        this._dialog.tracker.last_done = lastDoneInput.value;
-      }
-    });
-    const categoryInput = this.shadowRoot.querySelector('input[name="category"]');
-    this._bindDialogFieldFocus(categoryInput, { preventEnterSubmit: true });
-    categoryInput?.addEventListener("input", () => {
-      if (this._dialog) {
-        this._dialog.tracker.category = categoryInput.value;
-      }
-    });
-    const notesInput = this.shadowRoot.querySelector('textarea[name="notes"]');
-    this._bindDialogFieldFocus(notesInput);
-    notesInput?.addEventListener("input", () => {
-      if (this._dialog) {
-        this._dialog.tracker.notes = notesInput.value;
-      }
-    });
-    if (iconInput && previewIcon) {
-      this._bindDialogFieldFocus(iconInput);
-      iconInput.addEventListener("input", () => {
-        if (!this._dialog) return;
-        this._syncDialogTrackerFromForm();
-        this._dialog.iconQuery = iconInput.value.trim();
-      });
-      iconInput.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter") return;
-        event.preventDefault();
-        event.stopPropagation();
-        if (!this._dialog) return;
-        this._syncDialogTrackerFromForm();
-        const selectionStart = iconInput.selectionStart;
-        const selectionEnd = iconInput.selectionEnd;
-        this._dialog.iconQuery = iconInput.value.trim();
-        this._dialog.iconPickerOpen = true;
-        this._dialog.iconPickerMode = "all";
-        if (!this._allIconOptions && !this._dialog.allIconsLoading) {
-          this._dialog.allIconsLoading = true;
-          this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
-          void this._ensureAllIconsLoaded().then(() => {
-            if (!this._dialog) return;
-            this._dialog.allIconsLoading = false;
-            this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
-            requestAnimationFrame(() => {
-              this.shadowRoot?.querySelector('input[name="icon"]')?.blur();
-            });
-          });
-          return;
-        }
-        this._rerenderDialogAndRestoreIconInput(selectionStart, selectionEnd);
-        requestAnimationFrame(() => {
-          this.shadowRoot?.querySelector('input[name="icon"]')?.blur();
-        });
-      });
-    }
-    showCommonIcons?.addEventListener("click", () => {
-      if (!this._dialog) return;
-      this._syncDialogTrackerFromForm();
-      this._dialog.iconPickerOpen = true;
-      this._dialog.iconPickerMode = "common";
-      this._render();
-    });
-    showAllIcons?.addEventListener("click", () => {
-      if (!this._dialog) return;
-      this._syncDialogTrackerFromForm();
-      this._dialog.iconPickerOpen = true;
-      this._dialog.iconPickerMode = "all";
-      if (!this._allIconOptions && !this._dialog.allIconsLoading) {
-        this._dialog.allIconsLoading = true;
-        this._render();
-        void this._ensureAllIconsLoaded().then(() => {
-          if (!this._dialog) return;
-          this._dialog.allIconsLoading = false;
-          this._render();
-        });
-        return;
-      }
-      this._render();
-    });
-    this.shadowRoot.querySelectorAll("[data-icon-choice]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const icon = button.dataset.iconChoice;
-        if (!iconInput || !this._dialog) return;
-        this._dialog.tracker.icon = icon;
-        this._dialog.iconQuery = this._iconLabel(icon);
-        previewIcon?.setAttribute("icon", icon);
-        iconBarPreview?.setAttribute("icon", icon);
-        this._render();
-      });
-    });
+    this._bindDialogControls();
   }
 }
 
 class MaintenanceTrackerManagerEditor extends HTMLElement {
-  constructor() {
-    super();
-    this._config = {};
-    this._trackers = [];
-    this._settings = {
+  static get DEFAULT_CONFIG() {
+    return {
+      mode: "manager",
+      compact_count: 8,
+      visibility_due_days: 3,
+      visibility_overdue_days: 14,
+      selected_trackers: [],
+      compact_show_names: true,
+      compact_show_age_lifespan: true,
+      compact_show_summary: true,
+      compact_show_urgency: false,
+      compact_show_tile_background: true,
+      compact_show_dial_background: false,
+    };
+  }
+
+  static get DEFAULT_SETTINGS() {
+    return {
       notify_on_due: false,
       notify_hour: 7,
       notify_persistent: false,
     };
+  }
+
+  constructor() {
+    super();
+    this._config = {};
+    this._trackers = [];
+    this._settings = { ...MaintenanceTrackerManagerEditor.DEFAULT_SETTINGS };
     this._loading = false;
     this._settingsSaving = false;
   }
@@ -2246,20 +2195,22 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = {
-      mode: "manager",
-      compact_count: 8,
-      visibility_due_days: 3,
-      visibility_overdue_days: 14,
-      selected_trackers: [],
-      compact_show_names: true,
-      compact_show_age_lifespan: true,
-      compact_show_summary: true,
-      compact_show_urgency: false,
-      compact_show_tile_background: true,
-      compact_show_dial_background: false,
+      ...MaintenanceTrackerManagerEditor.DEFAULT_CONFIG,
       ...config,
     };
     this._render();
+  }
+
+  _normalizeSettings(settings) {
+    return {
+      notify_on_due: settings?.notify_on_due === true,
+      notify_hour: Number(settings?.notify_hour ?? 7),
+      notify_persistent: settings?.notify_persistent === true,
+    };
+  }
+
+  _sortTrackersByTitle(trackers) {
+    return [...trackers].sort((left, right) => (left.title || "").localeCompare(right.title || ""));
   }
 
   async _loadTrackers() {
@@ -2268,12 +2219,8 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     this._render();
     try {
       const result = await this._hass.callWS({ type: "maintenance_tracker/list_trackers" });
-      this._trackers = (result.trackers || []).sort((left, right) => (left.title || "").localeCompare(right.title || ""));
-      this._settings = {
-        notify_on_due: result.settings?.notify_on_due === true,
-        notify_hour: Number(result.settings?.notify_hour ?? 7),
-        notify_persistent: result.settings?.notify_persistent === true,
-      };
+      this._trackers = this._sortTrackersByTitle(result.trackers || []);
+      this._settings = this._normalizeSettings(result.settings);
     } catch (_err) {
       this._trackers = [];
     } finally {
@@ -2292,11 +2239,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
         type: "maintenance_tracker/update_settings",
         ...patch,
       });
-      this._settings = {
-        notify_on_due: result.settings?.notify_on_due === true,
-        notify_hour: Number(result.settings?.notify_hour ?? 7),
-        notify_persistent: result.settings?.notify_persistent === true,
-      };
+      this._settings = this._normalizeSettings(result.settings);
     } catch (_err) {
       // Keep local state optimistic; reload later will reconcile if needed.
     } finally {
@@ -2332,6 +2275,51 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
         ? (normalizedHour12 % 12) + 12
         : normalizedHour12 % 12;
     this._updateSettings({ notify_hour: hour24 });
+  }
+
+  _bindConfigChange(id, patchFactory) {
+    this.shadowRoot.getElementById(id)?.addEventListener("change", (event) => {
+      this._emitConfig(patchFactory(event));
+    });
+  }
+
+  _bindSettingsChange(id, patchFactory) {
+    this.shadowRoot.getElementById(id)?.addEventListener("change", (event) => {
+      this._updateSettings(patchFactory(event));
+    });
+  }
+
+  _bindEditorControls(notifyTime) {
+    this._bindConfigChange("mode", (event) => ({ mode: event.target.value }));
+    this._bindConfigChange("compact-count", (event) => ({ compact_count: Number(event.target.value || 4) }));
+    this._bindConfigChange("visibility-due-days", (event) => ({ visibility_due_days: Number(event.target.value || 0) }));
+    this._bindConfigChange("visibility-overdue-days", (event) => ({ visibility_overdue_days: Number(event.target.value || 0) }));
+    this._bindSettingsChange("notify-on-due", (event) => ({ notify_on_due: event.target.checked }));
+    this._bindSettingsChange("notify-persistent", (event) => ({ notify_persistent: event.target.checked }));
+
+    this.shadowRoot.getElementById("notify-hour")?.addEventListener("change", (event) => {
+      const meridiem = this.shadowRoot.getElementById("notify-meridiem")?.value || "AM";
+      this._updateNotifyTime({ hour12: event.target.value, meridiem });
+    });
+    this.shadowRoot.getElementById("notify-meridiem")?.addEventListener("change", (event) => {
+      const hour12 = this.shadowRoot.getElementById("notify-hour")?.value || notifyTime.hour12;
+      this._updateNotifyTime({ hour12, meridiem: event.target.value });
+    });
+
+    this._bindConfigChange("compact-show-names", (event) => ({ compact_show_names: event.target.checked }));
+    this._bindConfigChange("compact-show-age-lifespan", (event) => ({ compact_show_age_lifespan: event.target.checked }));
+    this._bindConfigChange("compact-show-summary", (event) => ({ compact_show_summary: event.target.checked }));
+    this._bindConfigChange("compact-show-urgency", (event) => ({ compact_show_urgency: event.target.checked }));
+    this._bindConfigChange("compact-show-tile-background", (event) => ({ compact_show_tile_background: event.target.checked }));
+    this._bindConfigChange("compact-show-dial-background", (event) => ({ compact_show_dial_background: event.target.checked }));
+
+    this.shadowRoot.querySelectorAll("[data-slug]").forEach((checkbox) => {
+      checkbox.addEventListener("change", () => {
+        const selectedTrackers = Array.from(this.shadowRoot.querySelectorAll("[data-slug]:checked"))
+          .map((item) => item.dataset.slug);
+        this._emitConfig({ selected_trackers: selectedTrackers });
+      });
+    });
   }
 
   _render() {
@@ -2485,57 +2473,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
         </div>
       </div>
     `;
-    this.shadowRoot.getElementById("mode").addEventListener("change", (event) => {
-      this._emitConfig({ mode: event.target.value });
-    });
-    this.shadowRoot.getElementById("compact-count").addEventListener("change", (event) => {
-      this._emitConfig({ compact_count: Number(event.target.value || 4) });
-    });
-    this.shadowRoot.getElementById("visibility-due-days").addEventListener("change", (event) => {
-      this._emitConfig({ visibility_due_days: Number(event.target.value || 0) });
-    });
-    this.shadowRoot.getElementById("visibility-overdue-days").addEventListener("change", (event) => {
-      this._emitConfig({ visibility_overdue_days: Number(event.target.value || 0) });
-    });
-    this.shadowRoot.getElementById("notify-on-due").addEventListener("change", (event) => {
-      this._updateSettings({ notify_on_due: event.target.checked });
-    });
-    this.shadowRoot.getElementById("notify-persistent").addEventListener("change", (event) => {
-      this._updateSettings({ notify_persistent: event.target.checked });
-    });
-    this.shadowRoot.getElementById("notify-hour").addEventListener("change", (event) => {
-      const meridiem = this.shadowRoot.getElementById("notify-meridiem")?.value || "AM";
-      this._updateNotifyTime({ hour12: event.target.value, meridiem });
-    });
-    this.shadowRoot.getElementById("notify-meridiem").addEventListener("change", (event) => {
-      const hour12 = this.shadowRoot.getElementById("notify-hour")?.value || notifyTime.hour12;
-      this._updateNotifyTime({ hour12, meridiem: event.target.value });
-    });
-    this.shadowRoot.getElementById("compact-show-names").addEventListener("change", (event) => {
-      this._emitConfig({ compact_show_names: event.target.checked });
-    });
-    this.shadowRoot.getElementById("compact-show-age-lifespan").addEventListener("change", (event) => {
-      this._emitConfig({ compact_show_age_lifespan: event.target.checked });
-    });
-    this.shadowRoot.getElementById("compact-show-summary").addEventListener("change", (event) => {
-      this._emitConfig({ compact_show_summary: event.target.checked });
-    });
-    this.shadowRoot.getElementById("compact-show-urgency").addEventListener("change", (event) => {
-      this._emitConfig({ compact_show_urgency: event.target.checked });
-    });
-    this.shadowRoot.getElementById("compact-show-tile-background").addEventListener("change", (event) => {
-      this._emitConfig({ compact_show_tile_background: event.target.checked });
-    });
-    this.shadowRoot.getElementById("compact-show-dial-background").addEventListener("change", (event) => {
-      this._emitConfig({ compact_show_dial_background: event.target.checked });
-    });
-    this.shadowRoot.querySelectorAll("[data-slug]").forEach((checkbox) => {
-      checkbox.addEventListener("change", () => {
-        const selectedTrackers = Array.from(this.shadowRoot.querySelectorAll("[data-slug]:checked"))
-          .map((item) => item.dataset.slug);
-        this._emitConfig({ selected_trackers: selectedTrackers });
-      });
-    });
+    this._bindEditorControls(notifyTime);
   }
 }
 

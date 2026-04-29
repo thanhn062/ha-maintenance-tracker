@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.7] - 2026-04-29
+
+### Added
+- Added a lightweight local test suite covering tracker slug normalization, due-notification behavior, and frontend service-call helper behavior.
+
+### Changed
+- Refactored tracker sorting and handle resolution logic in the frontend card to reduce repeated urgency computations and make internal service calls consistently use the public tracker handle.
+- Refactored the Lovelace editor internals to reuse shared config/settings normalization and reduce duplicated event-binding logic.
+- Refactored the add/edit dialog rendering path to reuse shared dialog and icon-picker markup instead of maintaining duplicated contained and modal branches.
+
+### Fixed
+- Simplified due-notification processing so it derives due-state directly from in-memory tracker records instead of re-sorting and re-looking trackers up during the notification pass.
+
 ## [0.1.6] - 2026-04-29
 
 ### Added
