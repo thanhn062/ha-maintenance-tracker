@@ -97,6 +97,20 @@ type: custom:maintenance-tracker-manager
 
 From there, open the card and press `Add tracker` to create your first maintenance task.
 
+For automations, scripts, or NFC tags, use the tracker slug as the service value:
+
+- `Bedsheets` -> `bedsheets`
+- `Water Filter` -> `water_filter`
+- `PC Cleanup` -> `pc_cleanup`
+
+Example:
+
+```yaml
+action: maintenance_tracker.reset
+data:
+  tracker: water_filter
+```
+
 ## Disclaimer
 
 This project was built with Codex, with me serving as project manager and overseeing the direction, review, and iteration process throughout.
