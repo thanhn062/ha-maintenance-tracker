@@ -17,16 +17,27 @@
 
 Default HACS inclusion is still pending. For now, install it as a custom repository.
 
-Maintenance Tracker is a lightweight productivity integration for Home Assistant.
+## Why This One?
 
-It is a modern revival of an older project I built about 6 years ago:
-[HowManyDaysSince](https://github.com/thanhn062/HowManyDaysSince)
+I know what you might be thinking: *not another tracker integration.*
 
-The core idea is simple: keep track of recurring maintenance tasks that need attention every now and then, without turning them into a whole project management system. Things like changing bed sheets and pillowcases, cleaning up your PC, checking your car's fluids, replacing a water filter, and countless other small but important jobs all fit naturally here.
+Fair enough. There are already other takes on this idea. But this project was built around a different goal: reducing reminder fatigue instead of creating another dashboard that slowly turns into background noise.
 
-For the past 6 years, I have been using a Scriptable-based version of this idea as an iPhone home screen widget through my old project, [HowManyDaysSince](https://github.com/thanhn062/HowManyDaysSince). Over time, I noticed that it slowly started to become a kind of "home screen noise" instead of a genuinely helpful reminder surface.
+I have been testing this concept in different forms for about 6 years through my older project, [HowManyDaysSince](https://github.com/thanhn062/HowManyDaysSince), and this is the version that feels most natural to live with in Home Assistant.
 
-That is what pushed me to bring the idea into Home Assistant in a way that feels simple, practical, and easy to live with day to day. There have been other takes on this kind of reminder tracker, but this version is built around a more intuitive and low-friction user experience. By adding visibility controls and notifications for due tasks, the goal is to reduce friction, make reminders feel more intentional, and encourage people to actually keep up with these recurring tasks.
+The focus here is not on showing every recurring task all the time. The focus is the workflow.
+
+The intended flow is simple:
+
+1. Create the task
+2. Complete it when it becomes due
+3. Reset it and repeat
+
+That is why visibility filtering is such a core part of the experience.
+
+After you create a task in **Manager** mode, it stays out of sight until it enters the visibility window you define. That way, your Home Assistant dashboard stays useful instead of becoming a wall of maintenance reminders you unconsciously ignore. Since it already lives in a space you check every day, whether on your phone or on a wall-mounted display, it becomes the right surface for these tasks at the right time.
+
+The goal is simple: make recurring maintenance tracking feel practical, low-friction, and easy to keep up with over time.
 
 ## Features
 
@@ -85,13 +96,9 @@ After HACS downloads the repository:
 2. Search for `Maintenance Tracker`
 3. Finish adding the integration
 4. Restart Home Assistant once so the card resource is loaded
+5. Refresh the Home Assistant page, then search for `Maintenance Tracker Manager` when adding a card
 
-After Home Assistant restarts:
-
-1. Open any dashboard and choose `Edit Dashboard`
-2. Add a card
-3. Search for `Maintenance Tracker Manager`
-4. If it still does not appear, use a `Manual` card with:
+If the card still does not appear, use a `Manual` card with:
 
 ```yaml
 type: custom:maintenance-tracker-manager
