@@ -16,6 +16,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     DEFAULT_NOTIFY_HOUR,
     DEFAULT_NOTIFY_ON_DUE,
+    DEFAULT_NOTIFY_PERSISTENT,
     DEFAULT_DUE_SOON_THRESHOLD,
     EVENT_TRACKER_DUE,
     STORAGE_KEY,
@@ -31,6 +32,7 @@ def _default_settings() -> dict[str, Any]:
     return {
         "notify_on_due": DEFAULT_NOTIFY_ON_DUE,
         "notify_hour": DEFAULT_NOTIFY_HOUR,
+        "notify_persistent": DEFAULT_NOTIFY_PERSISTENT,
     }
 
 
@@ -271,6 +273,7 @@ class TrackerStore:
 
     async def _async_send_due_notification(self, tracker: dict[str, Any]) -> None:
         """Send a Home Assistant notification using the shared notify pipeline."""
+        tag = f"maintenance_tracker_{tracker['id']}_{tracker['next_due_date']}"
         try:
             await self.hass.services.async_call(
                 "notify",
@@ -278,14 +281,27 @@ class TrackerStore:
                 {
                     "title": "Maintenance Task Due",
                     "message": f"{tracker['title']} is due today.",
-                    "data": {
-                        "tag": f"maintenance_tracker_{tracker['id']}_{tracker['next_due_date']}"
-                    },
+                    "data": {"tag": tag},
                 },
                 blocking=True,
             )
         except Exception:
             LOGGER.exception("Failed to send due notification via notify.notify")
+        if not self.get_settings().get("notify_persistent", DEFAULT_NOTIFY_PERSISTENT):
+            return
+        try:
+            await self.hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "Maintenance Task Due",
+                    "message": f"{tracker['title']} is due today.",
+                    "notification_id": tag,
+                },
+                blocking=True,
+            )
+        except Exception:
+            LOGGER.exception("Failed to create persistent due notification")
 
     def _find_tracker(self, tracker_id: str) -> dict[str, Any]:
         normalized = tracker_id.strip().lower()
@@ -298,11 +314,15 @@ class TrackerStore:
         data = dict(payload or {})
         notify_on_due = bool(data.get("notify_on_due", DEFAULT_NOTIFY_ON_DUE))
         notify_hour = int(data.get("notify_hour", DEFAULT_NOTIFY_HOUR))
+        notify_persistent = bool(
+            data.get("notify_persistent", DEFAULT_NOTIFY_PERSISTENT)
+        )
         if notify_hour < 0 or notify_hour > 23:
             raise ValueError("notify_hour must be between 0 and 23.")
         return {
             "notify_on_due": notify_on_due,
             "notify_hour": notify_hour,
+            "notify_persistent": notify_persistent,
         }
 
     def _existing_ids(self, excluding: str | None = None) -> set[str]:

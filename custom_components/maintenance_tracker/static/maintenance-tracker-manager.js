@@ -2231,6 +2231,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     this._settings = {
       notify_on_due: false,
       notify_hour: 7,
+      notify_persistent: false,
     };
     this._loading = false;
     this._settingsSaving = false;
@@ -2271,6 +2272,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       this._settings = {
         notify_on_due: result.settings?.notify_on_due === true,
         notify_hour: Number(result.settings?.notify_hour ?? 7),
+        notify_persistent: result.settings?.notify_persistent === true,
       };
     } catch (_err) {
       this._trackers = [];
@@ -2293,6 +2295,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       this._settings = {
         notify_on_due: result.settings?.notify_on_due === true,
         notify_hour: Number(result.settings?.notify_hour ?? 7),
+        notify_persistent: result.settings?.notify_persistent === true,
       };
     } catch (_err) {
       // Keep local state optimistic; reload later will reconcile if needed.
@@ -2417,6 +2420,10 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
               <input id="notify-on-due" type="checkbox" ${this._settings?.notify_on_due === true ? "checked" : ""} />
               <span>Send due notifications</span>
             </label>
+            <label class="picker-item">
+              <input id="notify-persistent" type="checkbox" ${this._settings?.notify_persistent === true ? "checked" : ""} />
+              <span>Create persistent Home Assistant notifications</span>
+            </label>
           </div>
           <div class="inline-grid">
             <label>
@@ -2492,6 +2499,9 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     });
     this.shadowRoot.getElementById("notify-on-due").addEventListener("change", (event) => {
       this._updateSettings({ notify_on_due: event.target.checked });
+    });
+    this.shadowRoot.getElementById("notify-persistent").addEventListener("change", (event) => {
+      this._updateSettings({ notify_persistent: event.target.checked });
     });
     this.shadowRoot.getElementById("notify-hour").addEventListener("change", (event) => {
       const meridiem = this.shadowRoot.getElementById("notify-meridiem")?.value || "AM";

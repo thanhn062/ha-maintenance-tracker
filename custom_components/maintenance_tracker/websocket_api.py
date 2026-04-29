@@ -18,6 +18,7 @@ SCHEMA_UPDATE_SETTINGS = {
     vol.Required("type"): WS_TYPE_UPDATE_SETTINGS,
     vol.Optional("notify_on_due"): bool,
     vol.Optional("notify_hour"): vol.All(vol.Coerce(int), vol.Range(min=0, max=23)),
+    vol.Optional("notify_persistent"): bool,
 }
 
 
@@ -59,7 +60,7 @@ def async_register(hass: HomeAssistant, store: TrackerStore) -> None:
     ) -> None:
         payload = {
             key: msg[key]
-            for key in ("notify_on_due", "notify_hour")
+            for key in ("notify_on_due", "notify_hour", "notify_persistent")
             if key in msg
         }
         try:
