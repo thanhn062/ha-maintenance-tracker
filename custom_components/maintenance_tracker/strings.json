@@ -24,15 +24,15 @@
     },
     "update_tracker": {
       "name": "Update tracker",
-      "description": "Update an existing maintenance tracker."
+      "description": "Update an existing maintenance tracker by slug, for example bedsheets."
     },
     "delete_tracker": {
       "name": "Delete tracker",
-      "description": "Delete an existing maintenance tracker."
+      "description": "Delete an existing maintenance tracker by slug, for example bedsheets."
     },
     "reset": {
       "name": "Reset tracker",
-      "description": "Reset a tracker last-done date to today or a supplied date."
+      "description": "Reset a tracker by slug, for example bedsheets, to today or a supplied date."
     },
     "reload": {
       "name": "Reload registry",

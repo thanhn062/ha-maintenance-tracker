@@ -53,9 +53,28 @@ CREATE_SCHEMA = vol.Schema(
         vol.Optional("category"): cv.string,
     }
 )
-UPDATE_SCHEMA = vol.Schema(
+
+
+def _validate_tracker_reference(data: dict[str, Any]) -> dict[str, Any]:
+    """Require either the new public tracker field or the legacy alias."""
+    if not data.get("tracker") and not data.get("tracker_id"):
+        raise vol.Invalid("expected tracker")
+    return data
+
+
+def _tracker_reference_schema(extra: dict[Any, Any] | None = None) -> vol.Schema:
+    """Build a schema that accepts tracker or legacy tracker_id."""
+    schema: dict[Any, Any] = {
+        vol.Exclusive("tracker", "tracker_reference"): cv.string,
+        vol.Exclusive("tracker_id", "tracker_reference"): cv.string,
+    }
+    if extra:
+        schema.update(extra)
+    return vol.All(vol.Schema(schema), _validate_tracker_reference)
+
+
+UPDATE_SCHEMA = _tracker_reference_schema(
     {
-        vol.Required("tracker_id"): cv.string,
         vol.Optional("title"): cv.string,
         vol.Optional("lifespan_days"): vol.Coerce(int),
         vol.Optional("last_done"): cv.string,
@@ -64,13 +83,8 @@ UPDATE_SCHEMA = vol.Schema(
         vol.Optional("category"): cv.string,
     }
 )
-DELETE_SCHEMA = vol.Schema({vol.Required("tracker_id"): cv.string})
-RESET_SCHEMA = vol.Schema(
-    {
-        vol.Required("tracker_id"): cv.string,
-        vol.Optional("date"): cv.string,
-    }
-)
+DELETE_SCHEMA = _tracker_reference_schema()
+RESET_SCHEMA = _tracker_reference_schema({vol.Optional("date"): cv.string})
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -138,14 +152,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     async def async_handle_update(call: ServiceCall) -> None:
         store = _get_store(hass)
         data = dict(call.data)
-        tracker_id = data.pop("tracker_id")
+        tracker_id = _extract_tracker_reference(data)
         tracker = await store.async_update_tracker(tracker_id, data)
         _fire_updated(hass, "update", tracker["id"])
         await _async_process_due_notifications(hass)
 
     async def async_handle_delete(call: ServiceCall) -> None:
         store = _get_store(hass)
-        tracker_id = call.data["tracker_id"]
+        tracker_id = _extract_tracker_reference(call.data)
         await store.async_delete_tracker(tracker_id)
         _fire_updated(hass, "delete", tracker_id)
         await _async_process_due_notifications(hass)
@@ -153,7 +167,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     async def async_handle_reset(call: ServiceCall) -> None:
         store = _get_store(hass)
         tracker = await store.async_reset_tracker(
-            call.data["tracker_id"], call.data.get("date")
+            _extract_tracker_reference(call.data), call.data.get("date")
         )
         _fire_updated(hass, "reset", tracker["id"])
         await _async_process_due_notifications(hass)
@@ -213,6 +227,11 @@ def _get_store(hass: HomeAssistant) -> TrackerStore:
             "Maintenance Tracker is not configured. Add the integration first."
         )
     return store
+
+
+def _extract_tracker_reference(data: dict[str, Any]) -> str:
+    """Return the public tracker handle, preferring the new field name."""
+    return data.pop("tracker", None) or data["tracker_id"]
 
 
 def _fire_updated(hass: HomeAssistant, action: str, tracker_id: str | None) -> None:

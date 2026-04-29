@@ -37,7 +37,7 @@ create_tracker:
 
 update_tracker:
   fields:
-    tracker_id:
+    tracker:
       required: true
       example: bedsheets
       selector:
@@ -67,7 +67,7 @@ update_tracker:
 
 delete_tracker:
   fields:
-    tracker_id:
+    tracker:
       required: true
       example: bedsheets
       selector:
@@ -75,7 +75,7 @@ delete_tracker:
 
 reset:
   fields:
-    tracker_id:
+    tracker:
       required: true
       example: bedsheets
       selector:
@@ -85,4 +85,3 @@ reset:
         date:
 
 reload:
-
