@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2026-04-29
+
+### Changed
+- Updated Home Assistant services to use the public `tracker` field instead of the more confusing `tracker_id` label.
+- Clarified tracker slug usage for automations, scripts, and NFC tags with examples like `bedsheets`, `water_filter`, and `pc_cleanup`.
+- Clarified the HACS install flow in the README, including the required integration setup and Home Assistant restart before the card appears in the picker.
+
+### Fixed
+- Fixed a `readonlydict` service-call error that could affect reset and delete flows.
+- Improved add/edit tracker behavior inside Bubble Card pop-ups by rendering it as a contained overlay layer instead of a nested fixed modal.
+- Made the add/edit layer sit on top of existing trackers inside the popup instead of pushing the tracker list downward.
+- Removed the unnecessary background gradient behind the contained add/edit layer.
+- Increased the dialog bottom spacer to improve mobile keyboard clearance while editing lower fields.
+
 ## [0.1.4] - 2026-04-28
 
 ### Fixed

@@ -449,12 +449,27 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   _handleDialogViewportChange() {
     if (!this._dialog) return;
+    if (this._isBubblePopupContext()) return;
     this._updateDialogBackdropBounds();
   }
 
   _composedParent(node) {
     if (!node) return null;
     return node.assignedSlot || node.parentNode || node.host || null;
+  }
+
+  _isBubblePopupContext() {
+    for (let node = this; node; node = this._composedParent(node)) {
+      if (!(node instanceof Element)) continue;
+      if (
+        node.classList?.contains("bubble-pop-up") ||
+        node.classList?.contains("bubble-pop-up-background") ||
+        node.classList?.contains("bubble-pop-up-container")
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   _findDialogAnchorRect() {
@@ -1015,6 +1030,7 @@ class MaintenanceTrackerManager extends HTMLElement {
 
   _renderDialog() {
     if (!this._dialog) return "";
+    const contained = this._isBubblePopupContext();
     const tracker = this._dialog.tracker;
     const isEdit = this._dialog.mode === "edit";
     const previewTitle = tracker.title || "Tracker title";
@@ -1032,7 +1048,91 @@ class MaintenanceTrackerManager extends HTMLElement {
     const groupedIcons = iconPickerMode === "all" ? [] : this._groupedIcons("");
     const allIcons = iconPickerMode === "all" ? this._allIconMatches(this._dialog.iconQuery) : [];
     const hasQuery = Boolean(this._normalizeIconQuery(this._dialog.iconQuery));
-    return `
+    return contained ? `
+      <div class="dialog-inline-shell">
+        <div class="dialog dialog-contained">
+          <div class="dialog-header">
+            <div class="dialog-title">${isEdit ? "Edit tracker" : "Add tracker"}</div>
+            <button type="button" class="action dialog-header-action" data-close-dialog>Close</button>
+          </div>
+          <div class="dialog-preview">
+            <div class="dialog-preview-dial">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="dial-bg" cx="50" cy="50" r="32"></circle>
+                <circle class="dial-progress" cx="50" cy="50" r="32" style="stroke:${previewColor};stroke-dasharray:${previewCircumference};stroke-dashoffset:${previewCircumference * (1 - previewProgress)};"></circle>
+              </svg>
+              <div class="dialog-preview-center">
+                <ha-icon icon="${previewIcon}"></ha-icon>
+              </div>
+            </div>
+            <div class="dialog-preview-copy">
+              <div class="dialog-preview-title">${previewTitle}</div>
+              <div class="dialog-preview-subtitle">Dial preview updates while you edit</div>
+            </div>
+          </div>
+          <form id="tracker-form">
+            <label>Title<input name="title" value="${tracker.title || ""}" required /></label>
+            <div class="icon-picker-shell">
+              <label>Icon</label>
+              <div class="icon-picker-bar">
+                <div class="icon-picker-preview">
+                  <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
+                </div>
+                <input name="icon" id="icon-search-input" value="${this._dialog.iconQuery || ""}" placeholder="Search icons" autocomplete="off" autocapitalize="off" spellcheck="false" />
+                <div class="icon-picker-actions">
+                  <button type="button" class="action ${iconPickerMode === "common" ? "action-primary" : ""}" id="show-common-icons">Common icons</button>
+                  <button type="button" class="action ${iconPickerMode === "all" ? "action-primary" : ""}" id="show-all-icons">All Icons</button>
+                </div>
+              </div>
+              ${this._dialog.iconPickerOpen ? `
+                <div class="icon-picker-panel">
+                  <div class="icon-picker-help">${this._dialog.allIconsLoading
+                    ? "Loading the full Material Design Icons catalog..."
+                    : iconPickerMode === "all"
+                      ? (hasQuery
+                        ? "Search results from the full Material Design Icons catalog."
+                        : "Press Enter in the search field to search all icons.")
+                      : "Common icons for common tasks. This list stays fixed; press Enter in the search field to search all icons."}</div>
+                  ${iconPickerMode === "all" ? `
+                    ${allIcons.length ? `
+                      <div class="icon-grid icon-grid-all">
+                        ${allIcons.map((icon) => `
+                          <button type="button" class="icon-tile ${icon === tracker.icon ? "icon-tile-active" : ""}" data-icon-choice="${icon}">
+                            <ha-icon icon="${icon}"></ha-icon>
+                            <span>${this._iconDisplayLabel(icon)}</span>
+                          </button>
+                        `).join("")}
+                      </div>
+                    ` : `<div class="icon-empty">No icons match that search.</div>`}
+                  ` : groupedIcons.length ? groupedIcons.map((group) => `
+                    <div class="icon-group">
+                      <div class="icon-group-label">${group.label}</div>
+                      <div class="icon-grid">
+                        ${group.icons.map((icon) => `
+                          <button type="button" class="icon-tile ${icon === tracker.icon ? "icon-tile-active" : ""}" data-icon-choice="${icon}">
+                            <ha-icon icon="${icon}"></ha-icon>
+                            <span>${this._iconDisplayLabel(icon)}</span>
+                          </button>
+                        `).join("")}
+                      </div>
+                    </div>
+                  `).join("") : `<div class="icon-empty">No icons match that search.</div>`}
+                </div>
+              ` : ""}
+            </div>
+            <label>Lifespan days<input name="lifespan_days" type="number" min="1" value="${tracker.lifespan_days || 7}" required /></label>
+            <label>Last done<input name="last_done" type="date" value="${tracker.last_done || ""}" required /></label>
+            <label>Category<input name="category" value="${tracker.category || ""}" /></label>
+            <label>Notes<textarea name="notes" rows="3">${tracker.notes || ""}</textarea></label>
+            <div class="dialog-actions">
+              <button type="button" class="action" data-close-dialog>Cancel</button>
+              <button type="submit" class="action action-primary">${isEdit ? "Save" : "Create"}</button>
+            </div>
+            <div class="dialog-bottom-spacer" aria-hidden="true"></div>
+          </form>
+        </div>
+      </div>
+    ` : `
       <div class="dialog-backdrop">
         <div class="dialog">
           <div class="dialog-header">
@@ -1164,6 +1264,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           border: none;
         }
         .shell {
+          position: relative;
           padding: 0;
           color: var(--primary-text-color);
         }
@@ -1457,7 +1558,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           flex-wrap: unset;
         }
         .dialog-bottom-spacer {
-          height: 280px;
+          height: 320px;
           pointer-events: none;
         }
         .action,
@@ -1552,6 +1653,16 @@ class MaintenanceTrackerManager extends HTMLElement {
           overscroll-behavior: contain;
           -webkit-overflow-scrolling: touch;
         }
+        .dialog-inline-shell {
+          position: absolute;
+          inset: 0;
+          z-index: 20;
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+          padding: 0;
+          pointer-events: auto;
+        }
         .dialog {
           width: min(460px, 100%);
           box-sizing: border-box;
@@ -1564,11 +1675,21 @@ class MaintenanceTrackerManager extends HTMLElement {
           max-height: calc(100dvh - 56px);
           overflow-y: auto;
         }
+        .dialog-contained {
+          width: min(100%, 520px);
+          max-height: none;
+          overflow: visible;
+          margin: 0 auto;
+          box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+        }
         .dialog-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
           margin-bottom: 12px;
+        }
+        .dialog-header-action {
+          padding: 8px 12px;
         }
         .dialog-preview {
           display: flex;
@@ -1802,12 +1923,21 @@ class MaintenanceTrackerManager extends HTMLElement {
             align-items: flex-start;
             padding: 24px 10px 14px;
           }
+          .dialog-inline-shell {
+            padding-top: 0;
+          }
           .dialog {
             max-height: calc(100dvh - 36px);
             border-radius: 18px;
           }
+          .dialog-contained {
+            max-height: none;
+          }
           .dialog-actions {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .dialog-bottom-spacer {
+            height: 380px;
           }
         }
       </style>
@@ -1819,9 +1949,9 @@ class MaintenanceTrackerManager extends HTMLElement {
           </div>
           ${this._error ? `<div class="error">${this._error}</div>` : ""}
           ${this._loading ? `<div class="empty-state">Loading trackers...</div>` : isCompact ? `<div class="compact-shell">${compactMarkup}</div>` : isBadge ? `<div class="badge-shell">${badgeMarkup}</div>` : `<div class="grid">${trackersMarkup}</div>`}
+          ${this._renderDialog()}
         </div>
       </ha-card>
-      ${this._renderDialog()}
     `;
 
     this.shadowRoot.getElementById("add-tracker")?.addEventListener("click", () => {
