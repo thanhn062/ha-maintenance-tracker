@@ -96,7 +96,7 @@ After HACS downloads the repository:
 2. Search for `Maintenance Tracker`
 3. Finish adding the integration
 4. Restart Home Assistant once so the card resource is loaded
-5. Refresh the Home Assistant page, then search for `Maintenance Tracker Manager` when adding a card
+5. Refresh the Home Assistant page (this is important for the card to show up on search), then search for `Maintenance Tracker Manager` when adding a card
 
 If the card still does not appear, use a `Manual` card with:
 
@@ -106,6 +106,7 @@ type: custom:maintenance-tracker-manager
 
 From there, open the card and press `Add tracker` to create your first maintenance task.
 
+## Automation
 For automations, scripts, or NFC tags, use the tracker slug as the service value:
 
 - `Bedsheets` -> `bedsheets`
