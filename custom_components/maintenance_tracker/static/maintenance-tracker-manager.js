@@ -13,6 +13,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       compact_show_names: true,
       compact_show_age_lifespan: true,
       compact_show_summary: true,
+      compact_show_notes: false,
       compact_show_urgency: false,
       compact_show_tile_background: true,
       compact_show_dial_background: false,
@@ -203,6 +204,7 @@ class MaintenanceTrackerManager extends HTMLElement {
       compact_show_names: true,
       compact_show_age_lifespan: true,
       compact_show_summary: true,
+      compact_show_notes: false,
       compact_show_urgency: false,
       compact_show_tile_background: true,
       compact_show_dial_background: false,
@@ -984,6 +986,7 @@ class MaintenanceTrackerManager extends HTMLElement {
     const showNames = this._config.compact_show_names !== false;
     const showAgeLifespan = this._config.compact_show_age_lifespan !== false;
     const showSummary = this._config.compact_show_summary === true;
+    const showNotes = this._config.compact_show_notes === true;
     const showUrgency = this._config.compact_show_urgency === true;
     const showTileBackground = this._config.compact_show_tile_background !== false;
     const showDialBackground = this._config.compact_show_dial_background !== false;
@@ -1008,6 +1011,7 @@ class MaintenanceTrackerManager extends HTMLElement {
           ${showNames ? `<div class="compact-title">${tracker.title}</div>` : ""}
           ${showAgeLifespan ? `<div class="compact-subtitle">${ageDays}/${lifespanDays}</div>` : ""}
           ${showSummary ? `<div class="compact-summary">${this._summaryText(tracker, { natural: true })}</div>` : ""}
+          ${showNotes && tracker.notes ? `<div class="compact-notes">${tracker.notes}</div>` : ""}
           ${showUrgency ? `<div class="compact-urgency">${urgency.label}</div>` : ""}
         </div>
       </button>
@@ -1336,6 +1340,10 @@ class MaintenanceTrackerManager extends HTMLElement {
           --mt-compact-center-strong: var(--ha-card-background, var(--card-background-color, #ffffff));
           --mt-compact-track-soft: color-mix(in srgb, var(--primary-text-color, #111111) 12%, transparent);
           --mt-compact-center-soft: color-mix(in srgb, var(--primary-text-color, #111111) 18%, transparent);
+          --mt-compact-note-bg-surface: color-mix(in srgb, var(--primary-text-color, #111111) 8%, transparent);
+          --mt-compact-note-border-surface: color-mix(in srgb, var(--primary-text-color, #111111) 10%, transparent);
+          --mt-compact-note-bg-plain: color-mix(in srgb, var(--ha-card-background, var(--card-background-color, #ffffff)) 50%, transparent);
+          --mt-compact-note-border-plain: color-mix(in srgb, var(--primary-text-color, #111111) 16%, transparent);
           --mt-surface-base: var(--ha-card-background, var(--card-background-color, #ffffff));
           --mt-surface-subtle: var(--secondary-background-color, var(--card-background-color, #f6f8fb));
           --mt-surface-raised: var(--primary-background-color, var(--ha-card-background, var(--card-background-color, #ffffff)));
@@ -1442,11 +1450,15 @@ class MaintenanceTrackerManager extends HTMLElement {
           border: var(--ha-card-border-width, 1px) solid var(--divider-color);
           background: var(--ha-card-background, var(--card-background-color));
           box-shadow: var(--ha-card-box-shadow, none);
+          --mt-compact-note-bg: var(--mt-compact-note-bg-surface);
+          --mt-compact-note-border: var(--mt-compact-note-border-surface);
         }
         .compact-tile-plain {
           border: none;
           background: transparent;
           box-shadow: none;
+          --mt-compact-note-bg: var(--mt-compact-note-bg-plain);
+          --mt-compact-note-border: var(--mt-compact-note-border-plain);
         }
         .compact-dial-wrap {
           position: relative;
@@ -1509,6 +1521,17 @@ class MaintenanceTrackerManager extends HTMLElement {
           font-size: 0.66rem;
           color: var(--primary-text-color);
           line-height: 1.15;
+        }
+        .compact-notes {
+          font-size: 0.66rem;
+          color: var(--primary-text-color);
+          line-height: 1.28;
+          padding: 3px 6px;
+          border-radius: 8px;
+          background: var(--mt-compact-note-bg, var(--mt-compact-note-bg-plain));
+          border: 1px solid var(--mt-compact-note-border, var(--mt-compact-note-border-plain));
+          white-space: normal;
+          overflow-wrap: anywhere;
         }
         .compact-urgency {
           font-size: 0.62rem;
@@ -2163,6 +2186,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
       compact_show_names: true,
       compact_show_age_lifespan: true,
       compact_show_summary: true,
+      compact_show_notes: false,
       compact_show_urgency: false,
       compact_show_tile_background: true,
       compact_show_dial_background: false,
@@ -2309,6 +2333,7 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
     this._bindConfigChange("compact-show-names", (event) => ({ compact_show_names: event.target.checked }));
     this._bindConfigChange("compact-show-age-lifespan", (event) => ({ compact_show_age_lifespan: event.target.checked }));
     this._bindConfigChange("compact-show-summary", (event) => ({ compact_show_summary: event.target.checked }));
+    this._bindConfigChange("compact-show-notes", (event) => ({ compact_show_notes: event.target.checked }));
     this._bindConfigChange("compact-show-urgency", (event) => ({ compact_show_urgency: event.target.checked }));
     this._bindConfigChange("compact-show-tile-background", (event) => ({ compact_show_tile_background: event.target.checked }));
     this._bindConfigChange("compact-show-dial-background", (event) => ({ compact_show_dial_background: event.target.checked }));
@@ -2442,6 +2467,10 @@ class MaintenanceTrackerManagerEditor extends HTMLElement {
             <label class="picker-item">
               <input id="compact-show-summary" type="checkbox" ${this._config?.compact_show_summary === true ? "checked" : ""} />
               <span>Show summary</span>
+            </label>
+            <label class="picker-item">
+              <input id="compact-show-notes" type="checkbox" ${this._config?.compact_show_notes === true ? "checked" : ""} />
+              <span>Show notes</span>
             </label>
             <label class="picker-item">
               <input id="compact-show-urgency" type="checkbox" ${this._config?.compact_show_urgency === true ? "checked" : ""} />
