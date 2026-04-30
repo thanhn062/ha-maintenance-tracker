@@ -420,10 +420,14 @@ class MaintenanceTrackerManager extends HTMLElement {
     const natural = options.natural === true;
     const overdueDays = Number(tracker.days_overdue || 0);
     const daysRemaining = Math.max(Number(tracker.days_remaining || 0), 0);
+    const useFriendlyUnits = options.friendlyUnits !== false;
 
     if (overdueDays > 0) {
       if (natural && overdueDays === 1) return "yesterday";
-      return `${overdueDays} day${overdueDays === 1 ? "" : "s"} overdue`;
+      const overdueLabel = useFriendlyUnits
+        ? this._formatFriendlyDuration(overdueDays)
+        : this._formatDayCount(overdueDays);
+      return `${overdueLabel} overdue`;
     }
     if (tracker.status === "due") {
       return "today";
@@ -431,7 +435,45 @@ class MaintenanceTrackerManager extends HTMLElement {
     if (natural && daysRemaining === 1) {
       return "tomorrow";
     }
-    return `in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`;
+    const remainingLabel = useFriendlyUnits
+      ? this._formatFriendlyDuration(daysRemaining)
+      : this._formatDayCount(daysRemaining);
+    return `in ${remainingLabel}`;
+  }
+
+  _formatDayCount(days) {
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+
+  _formatFriendlyDuration(days) {
+    const value = Math.max(Number(days || 0), 0);
+    if (value === 0) return "0 days";
+    const units = [];
+    let remaining = value;
+
+    const years = Math.floor(remaining / 365);
+    if (years > 0) {
+      units.push(`${years} year${years === 1 ? "" : "s"}`);
+      remaining -= years * 365;
+    }
+
+    const months = Math.floor(remaining / 30);
+    if (months > 0) {
+      units.push(`${months} month${months === 1 ? "" : "s"}`);
+      remaining -= months * 30;
+    }
+
+    const weeks = Math.floor(remaining / 7);
+    if (weeks > 0) {
+      units.push(`${weeks} week${weeks === 1 ? "" : "s"}`);
+      remaining -= weeks * 7;
+    }
+
+    if (remaining > 0 || units.length === 0) {
+      units.push(this._formatDayCount(remaining));
+    }
+
+    return units.slice(0, 2).join(" ");
   }
 
   _openDialog(mode, tracker = null) {
@@ -928,7 +970,6 @@ class MaintenanceTrackerManager extends HTMLElement {
     const urgency = this._urgencyInfo(tracker);
     const color = urgency.color;
     const accent = urgency.accent;
-    const progressPercent = Math.round(progress * 100);
     const overdueDays = Number(tracker.days_overdue || 0);
     const ageDays = Number(tracker.days_since_done || 0);
     const lifespanDays = Number(tracker.lifespan_days || 0);
@@ -948,7 +989,9 @@ class MaintenanceTrackerManager extends HTMLElement {
             </svg>
             <div class="dial-center" style="color:${color};">
               <ha-icon icon="${tracker.icon || "mdi:hammer-wrench"}"></ha-icon>
-              <div class="dial-percent">${progressPercent}%</div>
+              <div class="dial-progress-copy">
+                <div class="dial-progress-value">${ageDays}/${lifespanDays}</div>
+              </div>
             </div>
           </div>
           <div class="tracker-main">
@@ -961,8 +1004,8 @@ class MaintenanceTrackerManager extends HTMLElement {
               <div class="tracker-state-chip">${urgency.label}</div>
             </div>
             <div class="tracker-meta">
-              <span>Age: ${ageDays} day${ageDays === 1 ? "" : "s"}</span>
-              <span>Lifespan: ${lifespanDays} day${lifespanDays === 1 ? "" : "s"}</span>
+              <span>Age: ${this._formatFriendlyDuration(ageDays)}</span>
+              <span>Lifespan: ${this._formatFriendlyDuration(lifespanDays)}</span>
             </div>
           </div>
         </div>
@@ -1585,11 +1628,17 @@ class MaintenanceTrackerManager extends HTMLElement {
         .dial-center ha-icon {
           --mdc-icon-size: 30px;
         }
-        .dial-percent {
+        .dial-progress-copy {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
+        }
+        .dial-progress-value {
           font-size: 0.68rem;
           font-weight: 700;
-          letter-spacing: 0.04em;
           opacity: 0.85;
+          color: var(--primary-text-color);
         }
         .tracker-main {
           min-width: 0;

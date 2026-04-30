@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.8] - 2026-04-30
+
+### Added
+- Added optional compact-mode note display for trackers that include notes.
+
+### Changed
+- Clarified the README with clearer instructions to refresh Home Assistant after install when the card does not appear immediately.
+- Updated duration wording across manager, compact, and badge surfaces to use friendlier time units instead of always showing raw day counts.
+- Added compound duration formatting so tracker wording can display values like `1 week 3 days` and `1 month 2 days`.
+- Replaced the manager dial center percentage with a simpler `age/lifespan` progress display.
+- Switched the manager dial center value to use neutral theme text instead of the urgency accent color for better separation and readability.
+
+### Fixed
+- Refined compact-mode note presentation to better respect Home Assistant light and dark themes.
+- Adjusted compact note surfaces so they respond differently depending on whether tile background is enabled.
+- Reduced compact note opacity so notes feel tinted instead of solid, including a softer plain-mode background when tile background is disabled.
+
 ## [0.1.7] - 2026-04-29
 
 ### Added
@@ -19,9 +36,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Added a notification setting to create persistent Home Assistant notifications for due tasks.
+- Added AI attribution badges to the README.
 
 ### Changed
 - Shortened the notification-setting label to `Create persistent notifications` for a cleaner editor UI.
+- Refined the README hook and quick-start copy.
 
 ## [0.1.5] - 2026-04-29
 
