@@ -15,6 +15,8 @@
 [![Commit Messages by AI](https://img.shields.io/badge/Commit%20Messages%20by-AI-green?style=for-the-badge)](https://github.com/mefengl/made-by-ai)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/thanhnatos)
 
+> Check out my other Home Assistant related creations: [HA Dyson Card](https://github.com/thanhn062/ha-dyson-card)
+
 Default HACS inclusion is still pending. For now, install it as a custom repository.
 
 ## Why This One?
