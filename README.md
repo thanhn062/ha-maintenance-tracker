@@ -15,12 +15,6 @@
 [![Commit Messages by AI](https://img.shields.io/badge/Commit%20Messages%20by-AI-green?style=for-the-badge)](https://github.com/mefengl/made-by-ai)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/thanhnatos)
 
-<p>
-  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=thanhn062&repository=ha-maintenance-tracker&category=integration">
-    <img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and add this repository to HACS">
-  </a>
-</p>
-
 > Check out my other Home Assistant related creations: [HA Dyson Card](https://github.com/thanhn062/ha-dyson-card)
 
 ## Why This One?
@@ -89,6 +83,12 @@ Thanks to its creator for the inspiration.
 ## HACS Install
 
 Maintenance Tracker is available in the default HACS repository list:
+
+<p>
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=thanhn062&repository=ha-maintenance-tracker&category=integration">
+    <img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and add this repository to HACS">
+  </a>
+</p>
 
 Use the button above, or install it manually:
 
