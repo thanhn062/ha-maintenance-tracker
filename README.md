@@ -8,7 +8,7 @@
 [![Downloads](https://img.shields.io/github/downloads/thanhn062/ha-maintenance-tracker/total?style=for-the-badge)](https://github.com/thanhn062/ha-maintenance-tracker/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg?style=for-the-badge)](https://github.com/thanhn062/ha-maintenance-tracker/blob/main/LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.8.0-blue.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io/)
-[![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://www.hacs.xyz/docs/faq/custom_repositories/)
+[![HACS](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://www.hacs.xyz/)
 [![Validate](https://img.shields.io/github/actions/workflow/status/thanhn062/ha-maintenance-tracker/validate.yaml?branch=main&style=for-the-badge&label=validate)](https://github.com/thanhn062/ha-maintenance-tracker/actions/workflows/validate.yaml)
 [![Hassfest](https://img.shields.io/github/actions/workflow/status/thanhn062/ha-maintenance-tracker/hassfest.yaml?branch=main&style=for-the-badge&label=hassfest)](https://github.com/thanhn062/ha-maintenance-tracker/actions/workflows/hassfest.yaml)
 [![Made with AI](https://img.shields.io/badge/Made%20with-AI-lightgrey?style=for-the-badge)](https://github.com/mefengl/made-by-ai)
@@ -16,8 +16,6 @@
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/thanhnatos)
 
 > Check out my other Home Assistant related creations: [HA Dyson Card](https://github.com/thanhn062/ha-dyson-card)
-
-Default HACS inclusion is still pending. For now, install it as a custom repository.
 
 ## Why This One?
 
@@ -84,11 +82,12 @@ Thanks to its creator for the inspiration.
 
 ## HACS Install
 
-Default HACS inclusion is still pending, so add this repository as a custom repository in HACS:
+Maintenance Tracker is available in the default HACS repository list:
 
-1. HACS -> top-right menu -> `Custom repositories`
-2. Repository: `https://github.com/thanhn062/ha-maintenance-tracker`
-3. Category: `Integration`
+1. Open HACS
+2. Go to `Integrations`
+3. Search for `Maintenance Tracker`
+4. Download the integration
 
 ## Quick Start
 
