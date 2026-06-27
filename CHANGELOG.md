@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.10] - 2026-06-27
+
+### Fixed
+- Used an absolute README image URL so the project image renders inside HACS.
+- Added repository-level brand icon and logo assets for HACS listing metadata.
+
 ## [0.1.9] - 2026-06-27
 
 ### Changed
