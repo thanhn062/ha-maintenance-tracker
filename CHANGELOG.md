@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.9] - 2026-06-27
+
+### Changed
+- Updated README badges and install instructions now that Maintenance Tracker is available in the default HACS repository list.
+- Added a Home Assistant HACS install button to the HACS install section.
+
 ## [0.1.8] - 2026-04-30
 
 ### Added
